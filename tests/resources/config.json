@@ -1,0 +1,10 @@
+{
+    "settings": {
+        "id": 42,
+        "name": "node json from file"
+    },
+    "logger": {
+        "address": "json.localhost",
+        "tag": "logger json file tag"
+    }
+}

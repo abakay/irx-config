@@ -1,0 +1,6 @@
+settings:
+  id: 4242
+  name: node from yaml file
+  logger:
+    address: yaml.localhost
+    tag: logger yaml file tag
