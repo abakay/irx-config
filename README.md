@@ -9,9 +9,9 @@ goals is to be very easy to use and to be extendable.
 * Sealing secrets during display/debugging
 * Get all configuration parameters or just cherry pick few
 * Several embedded parsers available via library features:
-    - Command-line argument (via [clap](https://github.com/clap-rs/clap))
-    - Environment variables
-    - File based parsers: `JSON`, `YAML` and `TOML`
+  * Command-line argument (via [clap](https://github.com/clap-rs/clap))
+  * Environment variables
+  * File based parsers: `JSON`, `YAML` and `TOML`
 * Could be extended with custom parsers
 
 ## Examples

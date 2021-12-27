@@ -1,21 +1,25 @@
 [package]
 name = "irx-config"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 authors = ["Andriy Bakay <andriy@irbisx.com>"]
 description = "The library provides convenient way to represent/parse configuration from different sources"
 license = "BSD-2-Clause"
 homepage = "https://github.com/abakay/irx-config/"
 repository = "https://github.com/abakay/irx-config/"
-keywords = [
-    "configuration",
-    "environment",
-    "command-line",
-    "secrets",
-    "seal"
-]
+keywords = ["configuration", "environment", "command-line", "secrets", "seal"]
 categories = ["config"]
-include = ["src/**/*.rs", "tests/**/*", "Cargo.toml", "COPYRIGHT", "README.md"]
+include = [
+    "src/**/*.rs",
+    "tests/**/*",
+    "Cargo.toml",
+    "COPYRIGHT",
+    "README.md",
+    "CHANGELOG.md",
+]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dependencies]
 thiserror = "1.0"
