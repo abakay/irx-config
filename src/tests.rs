@@ -51,6 +51,7 @@ impl Parse for ValueParser {
 }
 
 #[derive(Deserialize, Debug)]
+#[allow(dead_code)] // For `Rust 1.57.0`
 struct Person {
     name: String,
     age: u8,

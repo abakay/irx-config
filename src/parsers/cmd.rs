@@ -107,14 +107,21 @@ impl<'a> ParserBuilder<'a> {
     }
 
     /// Set command-lne arguments names from `YAML` file in [`clap`] format.
-    pub fn try_arg_names_from_yaml(&mut self, data: &str) -> Result<&mut Self> {
-        if let YamlValue::Mapping(ref m) = serde_yaml::from_str(data)? {
-            let args = get_args_from_mapping(m);
-            self.arg_names = args.chain(get_args_from_subcommands(m)).cloned().collect();
-            Ok(self)
-        } else {
-            Err(Error::Common(crate::Error::NotMap))
+    pub fn try_arg_names_from_yaml<D>(&mut self, data: D) -> Result<&mut Self>
+    where
+        D: AsRef<str>,
+    {
+        fn inner(data: &str) -> Result<Vec<String>> {
+            if let YamlValue::Mapping(ref m) = serde_yaml::from_str(data)? {
+                let args = get_args_from_mapping(m);
+                Ok(args.chain(get_args_from_subcommands(m)).cloned().collect())
+            } else {
+                Err(Error::Common(crate::Error::NotMap))
+            }
         }
+
+        self.arg_names = inner(data.as_ref())?;
+        Ok(self)
     }
 
     /// Set key level delimiter.

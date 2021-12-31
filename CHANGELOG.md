@@ -1,5 +1,10 @@
 # ChangeLog
 
+## 2021-12-31 -- 1.0.2
+
+* Fixed compilation warnings for `Rust 1.57.0`.
+* Minor code improvements.
+
 ## 2021-12-27 -- 1.0.1
 
 Generate documentation on [docs.rs](https://docs.rs/) for all features.
