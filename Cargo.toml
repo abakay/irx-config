@@ -1,6 +1,6 @@
 [package]
 name = "irx-config"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 authors = ["Andriy Bakay <andriy@irbisx.com>"]
 description = "The library provides convenient way to represent/parse configuration from different sources"
