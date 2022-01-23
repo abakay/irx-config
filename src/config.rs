@@ -266,20 +266,14 @@ impl ConfigBuilder {
     /// # Example
     ///
     /// ```no_run
-    /// use clap::App;
+    /// use clap::app_from_crate;
     /// use irx_config::parsers::cmd;
     /// use irx_config::ConfigBuilder;
     ///
-    /// let yaml = clap::load_yaml!("cmd.yaml");
-    /// let matches = App::from_yaml(yaml).get_matches();
+    /// let app = app_from_crate!();
     ///
     /// let config = ConfigBuilder::default()
-    ///     .append_parser(
-    ///         cmd::ParserBuilder::default()
-    ///             .matches(matches)
-    ///             .try_arg_names_from_yaml(include_str!("cmd.yaml"))?
-    ///             .build()?,
-    ///     )
+    ///     .append_parser(cmd::ParserBuilder::new(app).build()?)
     ///     .keys_delimiter("/")
     ///     .load()?;
     /// ```

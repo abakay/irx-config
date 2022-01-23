@@ -1,6 +1,6 @@
 #[cfg(all(feature = "env", feature = "json", feature = "yaml", feature = "cmd"))]
 mod integration {
-    use clap::App;
+    use clap::{App, Arg, ArgSettings};
     use irx_config::parsers::{cmd, env, json, yaml};
     use irx_config::{json, AnyResult, ConfigBuilder, MergeCase, Value};
     use std::env as StdEnv;
@@ -35,6 +35,21 @@ mod integration {
         }
     }
 
+    fn create_app<'a>() -> App<'a> {
+        App::new("test").version("1.0").args([
+            Arg::new("config")
+                .short('c')
+                .long("config")
+                .setting(ArgSettings::TakesValue | ArgSettings::Required),
+            Arg::new("settings:name")
+                .short('n')
+                .long("name")
+                .setting(ArgSettings::TakesValue | ArgSettings::Required),
+            Arg::new("logger:timeout").short('t').takes_value(true),
+            Arg::new("verbose").short('v'),
+        ])
+    }
+
     #[test]
     fn full() -> AnyResult<()> {
         let mut expected = Value::try_from(json!({
@@ -51,12 +66,11 @@ mod integration {
                 },
                 "name": "Joe from cmd"
             },
-            "verbose": []
+            "verbose": 1
         }))?;
         expected.set_by_keys(["config"], resource_path!("config.json").to_owned())?;
 
-        let yaml = clap::load_yaml!(resource_path!("cmd.yaml"));
-        let matches = App::from_yaml(yaml).get_matches_from([
+        let args = [
             "test",
             "-c",
             resource_path!("config.json"),
@@ -65,11 +79,8 @@ mod integration {
             "-t",
             "1000",
             "-v",
-        ]);
-        let cmd_parser = cmd::ParserBuilder::default()
-            .matches(matches)
-            .try_arg_names_from_yaml(include_str!(resource_path!("cmd.yaml")))?
-            .build()?;
+        ];
+        let cmd_parser = cmd::ParserBuilder::new(create_app()).args(args).build()?;
 
         let json_path = resource_path!("config.json");
         let yaml_path = resource_path!("config.yaml");

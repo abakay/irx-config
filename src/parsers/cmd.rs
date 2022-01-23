@@ -1,50 +1,73 @@
-//! This module provide command-line parser implementation based on [`clap`] crate.
+//! This module provide command-line parser implementation based on [`clap`](https://docs.rs/clap/latest/clap/) crate.
 //!
 //! The value of each command-line option parsed will be typed according to `YAML` format.
 //!
-//! To enable that parser  one has to add the following to Cargo.toml:
+//! To enable that parser one has to add the following to Cargo.toml:
 //!
 //! ```toml
 //! [dependencies]
-//! irx-config = { version = "1.0", features = ["cmd"] }
+//! irx-config = { version = "2.0", features = ["cmd"] }
 //! ```
 //!
-//! # Example
+//! # Examples
+//!
+//! The names of arguments could contains keys delimiter (see [`DEFAULT_KEYS_SEPARATOR`] or/and
+//! [`ParserBuilder::keys_delimiter`] method). In such case argument's names will be splitted to nested keys and will
+//! be merged accordingly with other parsers results. Such nested keys structure(s) will represent
+//! sub dictionaries/sections.
 //!
 //! ```no_run
-//! use clap::App;
+//! use clap::{app_from_crate, Arg};
 //! use irx_config::ConfigBuilder;
 //! use irx_config::parsers::cmd::ParserBuilder;
 //!
-//! let yaml = clap::load_yaml!("cmd.yaml");
-//! let matches = App::from_yaml(yaml).get_matches();
+//! let app = app_from_crate!()
+//!             .arg(Arg::new("settings:host").short('H').long("host").takes_value(true));
 //!
 //! let config = ConfigBuilder::default()
-//!     .append_parser(
-//!         ParserBuilder::default()
-//!             .matches(matches)
-//!             .try_arg_names_from_yaml(include_str!("cmd.yaml"))?
-//!             .build()?,
-//!     )
+//!     .append_parser(ParserBuilder::new(app).build()?)
+//!     .load()?;
+//! ```
+//!
+//! If `global key names` feature is off (see [`ParserBuilder::global_key_names`] method) and executable has
+//! subcommand(s) then arguments names for each subcommand will be prefixed with given subcommand's name and keys
+//! delimiter. The `global key names` feature is on by default.
+//!
+//! ```no_run
+//! use clap::{app_from_crate, App, Arg};
+//! use irx_config::ConfigBuilder;
+//! use irx_config::parsers::cmd::ParserBuilder;
+//!
+//! let app = app_from_crate!()
+//!             .subcommand(
+//!                 App::new("connect")
+//!                     .arg(Arg::new("host").short('H').long("host").takes_value(true))
+//!             );
+//!
+//! let config = ConfigBuilder::default()
+//!     .append_parser(ParserBuilder::new(app).global_key_names(false).build()?)
 //!     .load()?;
 //! ```
 
 use crate::{AnyResult, Case, Parse, StdResult, Value, DEFAULT_KEYS_SEPARATOR};
-use clap::ArgMatches;
-use either::Either;
-use serde_yaml::{Mapping, Value as YamlValue};
+use clap::{App, Arg, ArgMatches, ArgSettings};
+use serde_yaml::Value as YamlValue;
+use std::{borrow::Cow, env, ffi::OsString};
 
 /// A result type for current module errors.
 pub type Result<T> = StdResult<T, Error>;
+
+/// The default maximum depth to get (sub)commands arguments names.
+pub const DEFAULT_MAX_DEPTH: u8 = 16;
 
 /// Error generated during build parser process.
 #[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Uninitialized field: {0:?}")]
-    UninitializedField(&'static str),
     #[error("Yaml parser error")]
     ParseYaml(#[from] serde_yaml::Error),
+    #[error("Clap error")]
+    Clap(#[from] clap::Error),
     #[error(transparent)]
     Common(#[from] crate::Error),
 }
@@ -70,61 +93,57 @@ impl Parse for Parser {
 
 /// Builder for [`Parser`].
 pub struct ParserBuilder<'a> {
-    matches: Option<ArgMatches<'a>>,
-    arg_names: Vec<String>,
+    app: App<'a>,
+    args: Option<Vec<OsString>>,
+    global_key_names: bool,
+    max_depth: u8,
     keys_delimiter: String,
     case_sensitive: bool,
-}
-
-impl Default for ParserBuilder<'_> {
-    fn default() -> Self {
-        Self {
-            matches: Default::default(),
-            arg_names: Default::default(),
-            keys_delimiter: DEFAULT_KEYS_SEPARATOR.to_string(),
-            case_sensitive: true,
-        }
-    }
+    exit_on_error: bool,
 }
 
 impl<'a> ParserBuilder<'a> {
-    /// Set [`ArgMatches`] matches from [`clap`] crate.
+    /// Create [`ParserBuilder`] from `clap::App` instance.
     #[inline]
-    pub fn matches(&mut self, matches: ArgMatches<'a>) -> &mut Self {
-        self.matches = Some(matches);
-        self
+    pub fn new(app: App<'a>) -> Self {
+        Self {
+            app,
+            args: Default::default(),
+            global_key_names: true,
+            max_depth: DEFAULT_MAX_DEPTH,
+            keys_delimiter: DEFAULT_KEYS_SEPARATOR.to_string(),
+            case_sensitive: true,
+            exit_on_error: false,
+        }
     }
 
-    /// Set command-line arguments names from iterator.
+    /// Set arguments to be parsed, otherwise program command-line arguments will be used.
     #[inline]
-    pub fn arg_names<I, T>(&mut self, names: I) -> &mut Self
+    pub fn args<I, T>(&mut self, args: I) -> &mut Self
     where
         I: IntoIterator<Item = T>,
-        T: Into<String>,
+        T: Into<OsString>,
     {
-        self.arg_names = names.into_iter().map(|n| n.into()).collect();
+        self.args = Some(args.into_iter().map(|a| a.into()).collect());
         self
     }
 
-    /// Set command-lne arguments names from `YAML` file in [`clap`] format.
-    pub fn try_arg_names_from_yaml<D>(&mut self, data: D) -> Result<&mut Self>
-    where
-        D: AsRef<str>,
-    {
-        fn inner(data: &str) -> Result<Vec<String>> {
-            if let YamlValue::Mapping(ref m) = serde_yaml::from_str(data)? {
-                let args = get_args_from_mapping(m);
-                Ok(args.chain(get_args_from_subcommands(m)).cloned().collect())
-            } else {
-                Err(Error::Common(crate::Error::NotMap))
-            }
-        }
-
-        self.arg_names = inner(data.as_ref())?;
-        Ok(self)
+    /// Use global key names for arguments if `true`, otherwise (sub)command name(s) will be used to prefix arguments
+    /// keys names with keys names delimiter. Default is `true`.
+    #[inline]
+    pub fn global_key_names(&mut self, on: bool) -> &mut Self {
+        self.global_key_names = on;
+        self
     }
 
-    /// Set key level delimiter.
+    /// Max depth of subcommands arguments to parse. Default is [`DEFAULT_MAX_DEPTH`].
+    #[inline]
+    pub fn max_depth(&mut self, depth: u8) -> &mut Self {
+        self.max_depth = depth;
+        self
+    }
+
+    /// Set key level delimiter. Default is [`DEFAULT_KEYS_SEPARATOR`].
     #[inline]
     pub fn keys_delimiter<S>(&mut self, delim: S) -> &mut Self
     where
@@ -134,10 +153,17 @@ impl<'a> ParserBuilder<'a> {
         self
     }
 
-    /// Set parser keys case sensitivity.
+    /// Set parser keys case sensitivity. Default is `true`.
     #[inline]
     pub fn case_sensitive(&mut self, on: bool) -> &mut Self {
         self.case_sensitive = on;
+        self
+    }
+
+    /// If set to `true` then exit from program on `clap::Error` during building stage. Default is `false`.
+    #[inline]
+    pub fn exit_on_error(&mut self, on: bool) -> &mut Self {
+        self.exit_on_error = on;
         self
     }
 
@@ -145,73 +171,114 @@ impl<'a> ParserBuilder<'a> {
     ///
     /// # Errors
     ///
-    /// If any errors will occur during build then error will be returned.
-    pub fn build(&self) -> Result<Parser> {
-        let matches = self
-            .matches
-            .as_ref()
-            .ok_or(Error::UninitializedField("matches"))?;
-        let mut value = Value::with_case(self.case_sensitive);
-        for arg in self.arg_names.iter() {
-            if let Some(v) = matches.values_of_lossy(arg) {
-                match v[..] {
-                    [ref a] => {
-                        value.set_by_key_path_with_delim(
-                            arg,
-                            &self.keys_delimiter,
-                            serde_yaml::from_str::<YamlValue>(a)?,
-                        )?;
-                    }
-                    _ => {
-                        value.set_by_key_path_with_delim(
-                            arg,
-                            &self.keys_delimiter,
-                            serde_yaml::from_str::<YamlValue>(&format!("[{}]", v.join(",")))?,
-                        )?;
-                    }
-                }
-            }
-        }
+    /// If any errors will occur during build then error will be returned. If `exit_on_error` was set to `true` then
+    /// program will exit if `clap::Error` will occur. Otherwise [`Result`] with proper error will be returned.
+    pub fn build(&mut self) -> Result<Parser> {
+        let result = self.get_matches();
+        let matches = if self.exit_on_error {
+            result.unwrap_or_else(|e| e.exit())
+        } else {
+            result?
+        };
+
+        let value = self.get_app_arguments(
+            Value::with_case(self.case_sensitive),
+            &self.app,
+            &matches,
+            "",
+            self.max_depth,
+        )?;
+
         Ok(Parser { value })
     }
-}
 
-fn get_args_from_mapping(map: &Mapping) -> impl Iterator<Item = &String> {
-    let args = YamlValue::String("args".to_string());
-    if let Some(YamlValue::Sequence(args)) = map.get(&args) {
-        Either::Left(args.iter().filter_map(|a| {
-            if let YamlValue::Mapping(m) = a {
-                m.iter().next().and_then(|(k, _)| match k {
-                    YamlValue::String(s) => Some(s),
-                    _ => None,
-                })
-            } else {
-                None
+    fn get_matches(&mut self) -> clap::Result<ArgMatches> {
+        if let Some(ref args) = self.args {
+            self.app.try_get_matches_from_mut(args)
+        } else {
+            self.app.try_get_matches_from_mut(&mut env::args_os())
+        }
+    }
+
+    fn get_app_arguments(
+        &self,
+        mut value: Value,
+        app: &App,
+        matches: &ArgMatches,
+        app_name: &str,
+        depth: u8,
+    ) -> Result<Value> {
+        let prefix = if self.global_key_names || app_name.is_empty() {
+            Default::default()
+        } else {
+            [app_name, &self.keys_delimiter].concat()
+        };
+
+        for arg in app.get_arguments() {
+            value = set_value(
+                value,
+                matches,
+                &[&prefix, arg.get_name()].concat(),
+                &self.keys_delimiter,
+                arg,
+            )?;
+        }
+
+        if depth == 0 {
+            return Ok(value);
+        }
+
+        for a in app.get_subcommands() {
+            if let Some(m) = matches.subcommand_matches(a.get_name()) {
+                value = self.get_app_arguments(
+                    value,
+                    a,
+                    m,
+                    &[&prefix, a.get_name()].concat(),
+                    depth - 1,
+                )?;
             }
-        }))
-    } else {
-        Either::Right(std::iter::empty())
+        }
+
+        Ok(value)
     }
 }
 
-fn get_args_from_subcommands(map: &Mapping) -> impl Iterator<Item = &String> {
-    let subcmds = YamlValue::String("subcommands".to_string());
-    if let Some(YamlValue::Sequence(cmds)) = map.get(&subcmds) {
-        Either::Left(
-            cmds.iter()
-                .filter_map(|c| {
-                    if let YamlValue::Mapping(m) = c {
-                        m.iter().next().and_then(|(_, v)| match v {
-                            YamlValue::Mapping(m) => Some(get_args_from_mapping(m)),
-                            _ => None,
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .flatten(),
-        )
-    } else {
-        Either::Right(std::iter::empty())
+fn get_values(matches: &ArgMatches, arg: &Arg) -> Option<Vec<String>> {
+    let id = arg.get_name();
+
+    if arg.is_set(ArgSettings::AllowInvalidUtf8) {
+        return matches.values_of_lossy(id);
     }
+
+    matches
+        .values_of(id)
+        .map(|v| v.map(|i| i.to_string()).collect())
+}
+
+fn set_value(
+    mut value: Value,
+    matches: &ArgMatches,
+    path: &str,
+    delim: &str,
+    arg: &Arg,
+) -> Result<Value> {
+    if let Some(v) = get_values(matches, arg) {
+        let is_list =
+            arg.is_set(ArgSettings::MultipleValues) || arg.is_set(ArgSettings::MultipleOccurrences);
+        let v: Vec<_> = v
+            .into_iter()
+            .map(|i| if i.is_empty() { "''".to_string() } else { i })
+            .collect();
+
+        let v = match v[..] {
+            [ref a] if !is_list => Cow::Borrowed(a),
+            [] if !arg.is_set(ArgSettings::TakesValue) => {
+                Cow::Owned(matches.occurrences_of(arg.get_name()).to_string())
+            }
+            _ => Cow::Owned(["[", &v.join(","), "]"].concat()),
+        };
+        value.set_by_key_path_with_delim(path, delim, serde_yaml::from_str::<YamlValue>(&v)?)?;
+    }
+    Ok(value)
 }
