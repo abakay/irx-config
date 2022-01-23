@@ -22,7 +22,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "1.0", features = ["env", "json"] }
+irx-config = { version = "2.0", features = ["env", "json"] }
 ```
 
 ```rust
@@ -61,11 +61,11 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "1.0", features = ["cmd", "env", "toml-parser"] }
+irx-config = { version = "2.0", features = ["cmd", "env", "toml-parser"] }
 ```
 
 ```rust
-use clap::App;
+use clap::app_from_crate;
 use irx_config::parsers::{cmd, env, toml};
 use irx_config::ConfigBuilder;
 use serde::Deserialize;
@@ -90,16 +90,14 @@ struct Conf {
     connection: Connection,
 }
 
-let yaml = clap::load_yaml!("cmd.yaml");
-let matches = App::from_yaml(yaml).get_matches();
+let app = app_from_crate!();
 
 // Data from three parsers will be merged. The values from parser appended first (`cmd`)
 // will take precedence if values have a same names
 let config = ConfigBuilder::default()
     .append_parser(
-        cmd::ParserBuilder::default()
-            .matches(matches)
-            .try_arg_names_from_yaml(include_str!("cmd.yaml"))?
+        cmd::ParserBuilder::new(app)
+            .exit_on_error(true)
             .build()?,
     )
     .append_parser(
@@ -162,7 +160,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "1.0", features = ["json"] }
+irx-config = { version = "2.0", features = ["json"] }
 ```
 
 ```rust

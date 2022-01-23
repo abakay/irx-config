@@ -1,5 +1,16 @@
 # ChangeLog
 
+## 2022-01-23 -- 2.0.0
+
+**NOTE:** The [clap](https://docs.rs/clap/) was upgraded to next major version `3.x`. Some old `API` was deprecated (`clap::load_yaml!`, etc.). These changes also forced an increase in the major version for this crate.
+
+* Upgrade [clap](https://docs.rs/clap/) dependency to the next major version `3.x`.
+* The following methods was removed from `cmd::ParserBuilder`:
+  * `default()`, replaced by `new(...)`
+  * `matches(...)`
+  * `arg_names(...)`
+  * `try_arg_names_from_yaml(...)`
+
 ## 2021-12-31 -- 1.0.2
 
 * Fixed compilation warnings for `Rust 1.57.0`.

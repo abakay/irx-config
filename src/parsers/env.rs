@@ -6,7 +6,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! irx-config = { version = "1.0", features = ["env"] }
+//! irx-config = { version = "2.0", features = ["env"] }
 //! ```
 //!
 //! # Example

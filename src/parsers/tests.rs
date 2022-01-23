@@ -166,30 +166,143 @@ mod toml_test {
 mod test_cmd {
     use super::*;
     use crate::parsers::cmd::ParserBuilder;
-    use clap::App;
+    use clap::{App, Arg, ArgSettings};
+
+    fn create_app_with_subcmds<'a>() -> App<'a> {
+        let user_args = [
+            Arg::new("name:first")
+                .short('n')
+                .setting(ArgSettings::TakesValue),
+            Arg::new("enabled").short('e').global(true),
+        ];
+
+        let alias_args = [
+            Arg::new("name")
+                .short('a')
+                .setting(ArgSettings::TakesValue | ArgSettings::Required),
+            Arg::new("enabled").short('e').global(true),
+        ];
+
+        App::new("test")
+            .arg(
+                Arg::new("config")
+                    .short('c')
+                    .long("config")
+                    .setting(ArgSettings::TakesValue | ArgSettings::Required),
+            )
+            .subcommand(
+                App::new("user")
+                    .subcommand(App::new("add").args(&user_args))
+                    .subcommand(App::new("del").args(&user_args)),
+            )
+            .subcommand(
+                App::new("alias")
+                    .subcommand(App::new("add").args(&alias_args))
+                    .subcommand(App::new("del").args(&alias_args)),
+            )
+    }
 
     #[test]
     fn parser() -> AnyResult<()> {
         let expected = Value::try_from(json!({
             "name": "Joe",
-            "timeout": [1000, "2000", false],
-            "verbose": []
+            "timeout": ["", 1000, "2000", false],
+            "verbose": 3,
+            "tag": ""
         }))?;
         println!("expected: {:?}", expected);
 
-        let yaml = clap::load_yaml!(resource_path!("clap.yaml"));
-        let matches = App::from_yaml(yaml).get_matches_from([
-            "test", "-n", "Joe", "-t", "1000", "-t", "'2000'", "-t", "false", "-vv",
+        let app = App::new("test").args([
+            Arg::new("name")
+                .short('n')
+                .long("name")
+                .takes_value(true)
+                .required(true),
+            Arg::new("timeout")
+                .multiple_occurrences(true)
+                .short('t')
+                .long("timeout")
+                .takes_value(true),
+            Arg::new("tag").short('T').takes_value(true),
+            Arg::new("verbose").multiple_occurrences(true).short('v'),
         ]);
+        let args = [
+            "test",
+            "-n",
+            "Joe",
+            "-t",
+            "''",
+            "-t",
+            "1000",
+            "-v",
+            "--timeout",
+            "'2000'",
+            "-t",
+            "false",
+            "-vv",
+            "-T",
+            "''",
+        ];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(app).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    fn user_add(expected: Value, global_on: bool) -> AnyResult<()> {
+        println!("expected: {:?}", expected);
+
+        let app = create_app_with_subcmds();
+        let args = [
+            "test",
+            "--config",
+            "config.toml",
+            "user",
+            "add",
+            "-n",
+            "John",
+            "-e",
+        ];
         let conf = ConfigBuilder::load_one(
-            ParserBuilder::default()
-                .matches(matches)
-                .try_arg_names_from_yaml(include_str!(resource_path!("clap.yaml")))?
+            ParserBuilder::new(app)
+                .args(args)
+                .global_key_names(global_on)
                 .build()?,
         )?;
         let calculated = conf.get_value();
         println!("calculated: {:?}", calculated);
         assert_eq!(expected, *calculated);
         Ok(())
+    }
+
+    #[test]
+    fn user_add_without_global_names() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "config": "config.toml",
+            "user": {
+                "add": {
+                    "name": {
+                        "first": "John"
+                    },
+                    "enabled": 1
+                }
+            }
+        }))?;
+
+        user_add(expected, false)
+    }
+
+    #[test]
+    fn user_add_with_global_names() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "config": "config.toml",
+            "name": {
+                "first": "John"
+            },
+            "enabled": 1
+        }))?;
+
+        user_add(expected, true)
     }
 }
