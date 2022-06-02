@@ -1,5 +1,9 @@
 # ChangeLog
 
+## 2022-06-01 -- 2.1.0
+
+Upgrade [clap](https://docs.rs/clap/) dependency to the next minor version `3.1.x`.
+
 ## 2022-01-23 -- 2.0.0
 
 **NOTE:** The [clap](https://docs.rs/clap/) was upgraded to next major version `3.x`. Some old `API` was deprecated (`clap::load_yaml!`, etc.). These changes also forced an increase in the major version for this crate.

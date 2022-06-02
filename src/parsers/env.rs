@@ -6,7 +6,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! irx-config = { version = "2.0", features = ["env"] }
+//! irx-config = { version = "2.1", features = ["env"] }
 //! ```
 //!
 //! # Example
@@ -69,8 +69,7 @@ impl Parse for Parser {
         } else {
             None
         }
-        .map(CowString::Owned)
-        .unwrap_or_else(|| CowString::Borrowed(&self.default_prefix));
+        .unwrap_or(CowString::Borrowed(&self.default_prefix));
 
         let case_on = self.is_case_sensitive();
         let prefix = crate::normalize_case(&prefix, case_on);

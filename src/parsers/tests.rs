@@ -166,39 +166,36 @@ mod toml_test {
 mod test_cmd {
     use super::*;
     use crate::parsers::cmd::ParserBuilder;
-    use clap::{App, Arg, ArgSettings};
+    use clap::{Arg, Command};
 
-    fn create_app_with_subcmds<'a>() -> App<'a> {
+    fn create_app_with_subcmds<'a>() -> Command<'a> {
         let user_args = [
-            Arg::new("name:first")
-                .short('n')
-                .setting(ArgSettings::TakesValue),
+            Arg::new("name:first").short('n').takes_value(true),
             Arg::new("enabled").short('e').global(true),
         ];
 
         let alias_args = [
-            Arg::new("name")
-                .short('a')
-                .setting(ArgSettings::TakesValue | ArgSettings::Required),
+            Arg::new("name").short('a').takes_value(true).required(true),
             Arg::new("enabled").short('e').global(true),
         ];
 
-        App::new("test")
+        Command::new("test")
             .arg(
                 Arg::new("config")
                     .short('c')
                     .long("config")
-                    .setting(ArgSettings::TakesValue | ArgSettings::Required),
+                    .takes_value(true)
+                    .required(true),
             )
             .subcommand(
-                App::new("user")
-                    .subcommand(App::new("add").args(&user_args))
-                    .subcommand(App::new("del").args(&user_args)),
+                Command::new("user")
+                    .subcommand(Command::new("add").args(&user_args))
+                    .subcommand(Command::new("del").args(&user_args)),
             )
             .subcommand(
-                App::new("alias")
-                    .subcommand(App::new("add").args(&alias_args))
-                    .subcommand(App::new("del").args(&alias_args)),
+                Command::new("alias")
+                    .subcommand(Command::new("add").args(&alias_args))
+                    .subcommand(Command::new("del").args(&alias_args)),
             )
     }
 
@@ -212,7 +209,7 @@ mod test_cmd {
         }))?;
         println!("expected: {:?}", expected);
 
-        let app = App::new("test").args([
+        let command = Command::new("test").args([
             Arg::new("name")
                 .short('n')
                 .long("name")
@@ -243,7 +240,7 @@ mod test_cmd {
             "-T",
             "''",
         ];
-        let conf = ConfigBuilder::load_one(ParserBuilder::new(app).args(args).build()?)?;
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
         println!("calculated: {:?}", calculated);
         assert_eq!(expected, *calculated);

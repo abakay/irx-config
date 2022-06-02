@@ -1,6 +1,6 @@
 #[cfg(all(feature = "env", feature = "json", feature = "yaml", feature = "cmd"))]
 mod integration {
-    use clap::{App, Arg, ArgSettings};
+    use clap::{Arg, Command};
     use irx_config::parsers::{cmd, env, json, yaml};
     use irx_config::{json, AnyResult, ConfigBuilder, MergeCase, Value};
     use std::env as StdEnv;
@@ -35,16 +35,18 @@ mod integration {
         }
     }
 
-    fn create_app<'a>() -> App<'a> {
-        App::new("test").version("1.0").args([
+    fn create_app<'a>() -> Command<'a> {
+        Command::new("test").version("1.0").args([
             Arg::new("config")
                 .short('c')
                 .long("config")
-                .setting(ArgSettings::TakesValue | ArgSettings::Required),
+                .takes_value(true)
+                .required(true),
             Arg::new("settings:name")
                 .short('n')
                 .long("name")
-                .setting(ArgSettings::TakesValue | ArgSettings::Required),
+                .takes_value(true)
+                .required(true),
             Arg::new("logger:timeout").short('t').takes_value(true),
             Arg::new("verbose").short('v'),
         ])
