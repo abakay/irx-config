@@ -6,7 +6,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! irx-config = { version = "2.0", features = ["cmd"] }
+//! irx-config = { version = "2.1", features = ["cmd"] }
 //! ```
 //!
 //! # Examples
@@ -17,15 +17,15 @@
 //! sub dictionaries/sections.
 //!
 //! ```no_run
-//! use clap::{app_from_crate, Arg};
+//! use clap::{command, Arg};
 //! use irx_config::ConfigBuilder;
 //! use irx_config::parsers::cmd::ParserBuilder;
 //!
-//! let app = app_from_crate!()
+//! let command = command!()
 //!             .arg(Arg::new("settings:host").short('H').long("host").takes_value(true));
 //!
 //! let config = ConfigBuilder::default()
-//!     .append_parser(ParserBuilder::new(app).build()?)
+//!     .append_parser(ParserBuilder::new(command).build()?)
 //!     .load()?;
 //! ```
 //!
@@ -34,23 +34,23 @@
 //! delimiter. The `global key names` feature is on by default.
 //!
 //! ```no_run
-//! use clap::{app_from_crate, App, Arg};
+//! use clap::{command, Command, Arg};
 //! use irx_config::ConfigBuilder;
 //! use irx_config::parsers::cmd::ParserBuilder;
 //!
-//! let app = app_from_crate!()
+//! let command = command!()
 //!             .subcommand(
-//!                 App::new("connect")
+//!                 Command::new("connect")
 //!                     .arg(Arg::new("host").short('H').long("host").takes_value(true))
 //!             );
 //!
 //! let config = ConfigBuilder::default()
-//!     .append_parser(ParserBuilder::new(app).global_key_names(false).build()?)
+//!     .append_parser(ParserBuilder::new(command).global_key_names(false).build()?)
 //!     .load()?;
 //! ```
 
 use crate::{AnyResult, Case, Parse, StdResult, Value, DEFAULT_KEYS_SEPARATOR};
-use clap::{App, Arg, ArgMatches, ArgSettings};
+use clap::{Arg, ArgMatches, Command};
 use serde_yaml::Value as YamlValue;
 use std::{borrow::Cow, env, ffi::OsString};
 
@@ -93,7 +93,7 @@ impl Parse for Parser {
 
 /// Builder for [`Parser`].
 pub struct ParserBuilder<'a> {
-    app: App<'a>,
+    command: Command<'a>,
     args: Option<Vec<OsString>>,
     global_key_names: bool,
     max_depth: u8,
@@ -103,11 +103,11 @@ pub struct ParserBuilder<'a> {
 }
 
 impl<'a> ParserBuilder<'a> {
-    /// Create [`ParserBuilder`] from `clap::App` instance.
+    /// Create [`ParserBuilder`] from `clap::Command` instance.
     #[inline]
-    pub fn new(app: App<'a>) -> Self {
+    pub fn new(command: Command<'a>) -> Self {
         Self {
-            app,
+            command,
             args: Default::default(),
             global_key_names: true,
             max_depth: DEFAULT_MAX_DEPTH,
@@ -183,7 +183,7 @@ impl<'a> ParserBuilder<'a> {
 
         let value = self.get_app_arguments(
             Value::with_case(self.case_sensitive),
-            &self.app,
+            &self.command,
             &matches,
             "",
             self.max_depth,
@@ -194,16 +194,16 @@ impl<'a> ParserBuilder<'a> {
 
     fn get_matches(&mut self) -> clap::Result<ArgMatches> {
         if let Some(ref args) = self.args {
-            self.app.try_get_matches_from_mut(args)
+            self.command.try_get_matches_from_mut(args)
         } else {
-            self.app.try_get_matches_from_mut(&mut env::args_os())
+            self.command.try_get_matches_from_mut(&mut env::args_os())
         }
     }
 
     fn get_app_arguments(
         &self,
         mut value: Value,
-        app: &App,
+        command: &Command,
         matches: &ArgMatches,
         app_name: &str,
         depth: u8,
@@ -214,11 +214,11 @@ impl<'a> ParserBuilder<'a> {
             [app_name, &self.keys_delimiter].concat()
         };
 
-        for arg in app.get_arguments() {
+        for arg in command.get_arguments() {
             value = set_value(
                 value,
                 matches,
-                &[&prefix, arg.get_name()].concat(),
+                &[&prefix, arg.get_id()].concat(),
                 &self.keys_delimiter,
                 arg,
             )?;
@@ -228,7 +228,7 @@ impl<'a> ParserBuilder<'a> {
             return Ok(value);
         }
 
-        for a in app.get_subcommands() {
+        for a in command.get_subcommands() {
             if let Some(m) = matches.subcommand_matches(a.get_name()) {
                 value = self.get_app_arguments(
                     value,
@@ -245,9 +245,8 @@ impl<'a> ParserBuilder<'a> {
 }
 
 fn get_values(matches: &ArgMatches, arg: &Arg) -> Option<Vec<String>> {
-    let id = arg.get_name();
-
-    if arg.is_set(ArgSettings::AllowInvalidUtf8) {
+    let id = arg.get_id();
+    if arg.is_allow_invalid_utf8_set() {
         return matches.values_of_lossy(id);
     }
 
@@ -264,8 +263,7 @@ fn set_value(
     arg: &Arg,
 ) -> Result<Value> {
     if let Some(v) = get_values(matches, arg) {
-        let is_list =
-            arg.is_set(ArgSettings::MultipleValues) || arg.is_set(ArgSettings::MultipleOccurrences);
+        let is_list = arg.is_multiple_values_set() || arg.is_multiple_occurrences_set();
         let v: Vec<_> = v
             .into_iter()
             .map(|i| if i.is_empty() { "''".to_string() } else { i })
@@ -273,8 +271,8 @@ fn set_value(
 
         let v = match v[..] {
             [ref a] if !is_list => Cow::Borrowed(a),
-            [] if !arg.is_set(ArgSettings::TakesValue) => {
-                Cow::Owned(matches.occurrences_of(arg.get_name()).to_string())
+            [] if !arg.is_takes_value_set() => {
+                Cow::Owned(matches.occurrences_of(arg.get_id()).to_string())
             }
             _ => Cow::Owned(["[", &v.join(","), "]"].concat()),
         };
