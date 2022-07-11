@@ -7,6 +7,8 @@ pub mod cmd;
 pub mod env;
 #[cfg(feature = "json")]
 pub mod json;
+#[cfg(feature = "json5-parser")]
+pub mod json5;
 #[cfg(test)]
 mod tests;
 #[cfg(feature = "toml-parser")]

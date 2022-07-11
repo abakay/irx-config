@@ -11,7 +11,7 @@ goals is to be very easy to use and to be extendable.
 * Several embedded parsers available via library features:
   * Command-line argument (via [clap](https://github.com/clap-rs/clap))
   * Environment variables
-  * File based parsers: `JSON`, `YAML` and `TOML`
+  * File based parsers: `JSON`, `JSON5`, `YAML` and `TOML`
 * Could be extended with custom parsers
 
 ## Examples
@@ -22,7 +22,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "2.1", features = ["env", "json"] }
+irx-config = { version = "2.2", features = ["env", "json"] }
 ```
 
 ```rust
@@ -61,7 +61,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "2.1", features = ["cmd", "env", "toml-parser"] }
+irx-config = { version = "2.2", features = ["cmd", "env", "toml-parser"] }
 ```
 
 ```rust
@@ -160,7 +160,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "2.1", features = ["json"] }
+irx-config = { version = "2.2", features = ["json"] }
 ```
 
 ```rust

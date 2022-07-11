@@ -98,6 +98,31 @@ mod json_test {
     }
 }
 
+#[cfg(feature = "json5-parser")]
+mod json5_test {
+    use super::*;
+    use crate::parsers::json5::ParserBuilder;
+
+    #[test]
+    fn parser() -> AnyResult<()> {
+        let path = resource_path!("config.json5");
+        let expected_path = resource_path!("config.json");
+        let expected = fs::read_to_string(&expected_path)?;
+        let expected: Value = serde_json::from_str(&expected)?;
+
+        let conf = ConfigBuilder::default()
+            .append_parser(
+                ParserBuilder::default()
+                    .default_path(path)
+                    .path_option("config")
+                    .build()?,
+            )
+            .load()?;
+        assert_eq!(expected, conf.get::<Value>()?);
+        Ok(())
+    }
+}
+
 #[cfg(feature = "yaml")]
 mod yaml_test {
     use super::*;

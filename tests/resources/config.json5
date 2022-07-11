@@ -1,0 +1,12 @@
+{
+    settings: {
+        id: 42, // The answer for...
+        name: 'node json from file'
+    },
+    logger: {
+        /* Logger
+         */
+        address: 'json.localhost',
+        tag: "logger json file tag"
+    }
+}
