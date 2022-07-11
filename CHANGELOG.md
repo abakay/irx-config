@@ -1,5 +1,9 @@
 # ChangeLog
 
+## 2022-07-07 -- 2.2.0
+
+Added `JSON5` parser via `json5-parser` feature.
+
 ## 2022-06-01 -- 2.1.0
 
 Upgrade [clap](https://docs.rs/clap/) dependency to the next minor version `3.1.x`.

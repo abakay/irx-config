@@ -1,22 +1,22 @@
-//! This module provide `JSON` parser implementation.
+//! This module provide `JSON5` parser implementation.
 //!
 //! To enable that parser  one has to add the following to Cargo.toml:
 //!
 //! ```toml
 //! [dependencies]
-//! irx-config = { version = "2.2", features = ["json"] }
+//! irx-config = { version = "2.2", features = ["json5-parser"] }
 //! ```
 //!
 //! # Example
 //!
 //! ```no_run
 //! use irx_config::ConfigBuilder;
-//! use irx_config::parsers::json::ParserBuilder;
+//! use irx_config::parsers::json5::ParserBuilder;
 //!
 //! let config = ConfigBuilder::default()
 //!     .append_parser(
 //!         ParserBuilder::default()
-//!             .default_path("config.json")
+//!             .default_path("config.json5")
 //!             .path_option("config")
 //!             .build()?,
 //!     )
@@ -27,7 +27,7 @@ use crate::parsers::{FileParserBuilder, Load};
 use crate::{AnyResult, Case, Value};
 use std::io::Read;
 
-/// Implements [`Load`] trait for `JSON` parser.
+/// Implements [`Load`] trait for `JSON5` parser.
 #[derive(Clone)]
 pub struct LoadJson;
 
@@ -35,16 +35,18 @@ impl Case for LoadJson {}
 
 impl Load for LoadJson {
     #[inline]
-    fn load(&mut self, reader: impl Read) -> AnyResult<Value> {
-        Ok(serde_json::from_reader(reader)?)
+    fn load(&mut self, mut reader: impl Read) -> AnyResult<Value> {
+        let mut data = String::new();
+        reader.read_to_string(&mut data)?;
+        Ok(json5::from_str(&data)?)
     }
 }
 
-/// Builder for `JSON` parser.
+/// Builder for `JSON5` parser.
 pub struct ParserBuilder;
 
 impl ParserBuilder {
-    /// Construct instance of `JSON` builder parser.
+    /// Construct instance of `JSON5` builder parser.
     pub fn default() -> FileParserBuilder<LoadJson> {
         let mut builder = FileParserBuilder::default();
         builder.loader(LoadJson);
