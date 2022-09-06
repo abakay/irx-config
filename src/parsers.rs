@@ -19,7 +19,7 @@ pub mod yaml;
 use crate::{AnyResult, Case, CowString, Parse, Value, DEFAULT_KEYS_SEPARATOR};
 use derive_builder::Builder;
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{BufReader, Error, ErrorKind, Read, Result};
 use std::path::PathBuf;
 
 /// The trait to be used by [`FileParser`] to load data from file in specific format.
@@ -44,6 +44,9 @@ pub struct FileParser<L> {
     /// Set delimiter used to separate keys levels in path value. Default is [`DEFAULT_KEYS_SEPARATOR`].
     #[builder(default = "DEFAULT_KEYS_SEPARATOR.to_string()")]
     keys_delimiter: String,
+    /// If file does not exists do not try to load it. The default [`Value`] will be returned. Default is `false`.
+    #[builder(default = "false")]
+    ignore_missing_file: bool,
     /// Set the loader structure which implements [`Load`] trait.
     loader: L,
 }
@@ -65,7 +68,21 @@ impl<L: Load> Parse for FileParser<L> {
         .map(CowString::Owned)
         .unwrap_or_else(|| self.default_path.to_string_lossy());
 
-        let reader = BufReader::new(File::open(path.as_ref())?);
-        self.loader.load(reader)
+        let file = match try_open_file(path.as_ref()) {
+            Ok(f) => f,
+            Err(_) if self.ignore_missing_file => return Ok(Value::default()),
+            Err(e) => return Err(e.into()),
+        };
+
+        self.loader.load(BufReader::new(file))
     }
+}
+
+fn try_open_file(path: &str) -> Result<File> {
+    let file = File::open(path)?;
+    if file.metadata()?.is_file() {
+        return Ok(file);
+    }
+
+    Err(Error::new(ErrorKind::InvalidData, "Is not a file"))
 }

@@ -100,6 +100,7 @@ pub struct ParserBuilder<'a> {
     keys_delimiter: String,
     case_sensitive: bool,
     exit_on_error: bool,
+    single_flags_as_bool: bool,
 }
 
 impl<'a> ParserBuilder<'a> {
@@ -114,6 +115,7 @@ impl<'a> ParserBuilder<'a> {
             keys_delimiter: DEFAULT_KEYS_SEPARATOR.to_string(),
             case_sensitive: true,
             exit_on_error: false,
+            single_flags_as_bool: false,
         }
     }
 
@@ -164,6 +166,18 @@ impl<'a> ParserBuilder<'a> {
     #[inline]
     pub fn exit_on_error(&mut self, on: bool) -> &mut Self {
         self.exit_on_error = on;
+        self
+    }
+
+    /// By default all command-line parameters without values will have they values set to number of they occurrences.
+    /// If this setting is set to `true` and a parameter **not allowed to have multiple occurrences** by `clap` API
+    /// then parameter's value will have boolean `true` as a value.
+    ///
+    /// **NOTE**: That default values for that setting is `false` now, but it probably will be changed to `true`
+    /// in next major release version to provide more ergonomic API.
+    #[inline]
+    pub fn single_flags_as_bool(&mut self, on: bool) -> &mut Self {
+        self.single_flags_as_bool = on;
         self
     }
 
@@ -221,6 +235,7 @@ impl<'a> ParserBuilder<'a> {
                 &[&prefix, arg.get_id()].concat(),
                 &self.keys_delimiter,
                 arg,
+                self.single_flags_as_bool,
             )?;
         }
 
@@ -261,6 +276,7 @@ fn set_value(
     path: &str,
     delim: &str,
     arg: &Arg,
+    single_flags_as_bool: bool,
 ) -> Result<Value> {
     if let Some(v) = get_values(matches, arg) {
         let is_list = arg.is_multiple_values_set() || arg.is_multiple_occurrences_set();
@@ -272,7 +288,11 @@ fn set_value(
         let v = match v[..] {
             [ref a] if !is_list => Cow::Borrowed(a),
             [] if !arg.is_takes_value_set() => {
-                Cow::Owned(matches.occurrences_of(arg.get_id()).to_string())
+                if single_flags_as_bool && !arg.is_multiple_occurrences_set() {
+                    Cow::Owned("true".to_string())
+                } else {
+                    Cow::Owned(matches.occurrences_of(arg.get_id()).to_string())
+                }
             }
             _ => Cow::Owned(["[", &v.join(","), "]"].concat()),
         };
