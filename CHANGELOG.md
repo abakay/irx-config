@@ -1,5 +1,12 @@
 # ChangeLog
 
+## 2022-09-05 -- 2.3.0
+
+Enhancements:
+
+* Added a new setting `single_flags_as_bool` to `cmd` parser. If that setting is set to `true` and a parameter **not allowed to have multiple occurrences** by [clap](https://docs.rs/clap/) API then parameter's value will have boolean `true` as a value. By default all command-line parameters without values will have they values set to number of they occurrences.
+* Added a new setting `ignore_missing_file` to file based parsers. If that setting is set to `true` then a file does not exists, do not try to load it. The default `Value` will be returned. Default is `false`.
+
 ## 2022-07-07 -- 2.2.0
 
 Added `JSON5` parser via `json5-parser` feature.

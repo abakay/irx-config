@@ -96,6 +96,52 @@ mod json_test {
         assert_eq!(expected, conf.get::<Value>()?);
         Ok(())
     }
+
+    #[test]
+    fn parser_ignore_missing_file() -> AnyResult<()> {
+        let path = resource_path!("missing.json");
+        let conf = ConfigBuilder::default()
+            .append_parser(
+                ParserBuilder::default()
+                    .default_path(path)
+                    .ignore_missing_file(true)
+                    .build()?,
+            )
+            .load()?;
+        assert_eq!(Value::default(), conf.get::<Value>()?);
+        Ok(())
+    }
+
+    #[test]
+    #[should_panic(expected = "kind: NotFound")]
+    fn parse_file_not_found() {
+        let path = resource_path!("not-found.json");
+        ConfigBuilder::default()
+            .append_parser(
+                ParserBuilder::default()
+                    .default_path(path)
+                    .path_option("config")
+                    .build()
+                    .unwrap(),
+            )
+            .load()
+            .unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Is not a file")]
+    fn parse_not_a_file() {
+        ConfigBuilder::default()
+            .append_parser(
+                ParserBuilder::default()
+                    .default_path(".")
+                    .path_option("config")
+                    .build()
+                    .unwrap(),
+            )
+            .load()
+            .unwrap();
+    }
 }
 
 #[cfg(feature = "json5-parser")]
@@ -230,6 +276,7 @@ mod test_cmd {
             "name": "Joe",
             "timeout": ["", 1000, "2000", false],
             "verbose": 3,
+            "debug": 1,
             "tag": ""
         }))?;
         println!("expected: {:?}", expected);
@@ -247,6 +294,7 @@ mod test_cmd {
                 .takes_value(true),
             Arg::new("tag").short('T').takes_value(true),
             Arg::new("verbose").multiple_occurrences(true).short('v'),
+            Arg::new("debug").short('d'),
         ]);
         let args = [
             "test",
@@ -264,8 +312,34 @@ mod test_cmd {
             "-vv",
             "-T",
             "''",
+            "-d",
         ];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    #[test]
+    fn single_flags_as_bool() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "verbose": 1,
+            "debug": true,
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command = Command::new("test").args([
+            Arg::new("verbose").multiple_occurrences(true).short('v'),
+            Arg::new("debug").short('d'),
+        ]);
+        let args = ["test", "-v", "-d"];
+        let conf = ConfigBuilder::load_one(
+            ParserBuilder::new(command)
+                .args(args)
+                .single_flags_as_bool(true)
+                .build()?,
+        )?;
         let calculated = conf.get_value();
         println!("calculated: {:?}", calculated);
         assert_eq!(expected, *calculated);

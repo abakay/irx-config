@@ -52,24 +52,7 @@ mod integration {
         ])
     }
 
-    #[test]
-    fn full() -> AnyResult<()> {
-        let mut expected = Value::try_from(json!({
-            "logger": {
-                "address": "json.localhost",
-                "tag": "logger json file tag",
-                "timeout": 1000
-            },
-            "settings": {
-                "id": 42,
-                "logger": {
-                    "address": "yaml.localhost",
-                    "tag": "logger yaml file tag"
-                },
-                "name": "Joe from cmd"
-            },
-            "verbose": 1
-        }))?;
+    fn full_test(mut expected: Value, json_path: &str) -> AnyResult<()> {
         expected.set_by_keys(["config"], resource_path!("config.json").to_owned())?;
 
         let args = [
@@ -84,13 +67,17 @@ mod integration {
         ];
         let cmd_parser = cmd::ParserBuilder::new(create_app()).args(args).build()?;
 
-        let json_path = resource_path!("config.json");
         let yaml_path = resource_path!("config.yaml");
 
-        let json_parser = json::ParserBuilder::default()
-            .default_path(json_path)
-            .path_option("config")
-            .build()?;
+        let mut json_builder = json::ParserBuilder::default();
+        json_builder.default_path(json_path);
+        if json_path.is_empty() {
+            json_builder.ignore_missing_file(true);
+        } else {
+            json_builder.path_option("config");
+        }
+
+        let json_parser = json_builder.build()?;
 
         let yaml_parser = yaml::ParserBuilder::default()
             .default_path(yaml_path)
@@ -110,6 +97,49 @@ mod integration {
         println!("{}", config);
         assert_eq!(expected, *config.get_value());
         Ok(())
+    }
+
+    #[test]
+    fn full() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "logger": {
+                "address": "json.localhost",
+                "tag": "logger json file tag",
+                "timeout": 1000
+            },
+            "settings": {
+                "id": 42,
+                "logger": {
+                    "address": "yaml.localhost",
+                    "tag": "logger yaml file tag"
+                },
+                "name": "Joe from cmd"
+            },
+            "verbose": 1
+        }))?;
+
+        full_test(expected, resource_path!("config.json"))
+    }
+
+    #[test]
+    fn full_with_ignore() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "logger": {
+                "tag": "logger env file tag",
+                "timeout": 1000
+            },
+            "settings": {
+                "id": 4242,
+                "logger": {
+                    "address": "yaml.localhost",
+                    "tag": "logger yaml file tag"
+                },
+                "name": "Joe from cmd"
+            },
+            "verbose": 1
+        }))?;
+
+        full_test(expected, "")
     }
 
     fn test_case<E, M>(expected: &Value, env_case: E, merge_case: M) -> AnyResult<()>
