@@ -1,5 +1,9 @@
 # ChangeLog
 
+## 2022-09-07 -- 2.3.1
+
+Fixed implicit conversion of `crate::Error` to `anyhow::Error`.
+
 ## 2022-09-05 -- 2.3.0
 
 Enhancements:
