@@ -19,8 +19,10 @@ use std::result::Result as StdResult;
 /// A result type with internal error.
 pub type Result<T> = StdResult<T, Error>;
 
+type AnyError = Box<dyn StdError + Send + Sync + 'static>;
+
 /// A result type with any error.
-pub type AnyResult<T> = StdResult<T, Box<dyn StdError>>;
+pub type AnyResult<T> = StdResult<T, AnyError>;
 
 type CowString<'a> = Cow<'a, str>;
 type AnyParser = Box<dyn Parse>;
@@ -39,7 +41,7 @@ pub enum Error {
     #[error("Failed to serialize/deserialize")]
     SerdeError(#[from] SerdeError),
     #[error("Failed to parse value")]
-    ParseValue(#[from] Box<dyn StdError>),
+    ParseValue(#[from] AnyError),
     #[error(transparent)]
     IO(#[from] std::io::Error),
 }
