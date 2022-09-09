@@ -279,7 +279,9 @@ fn set_value(
     single_flags_as_bool: bool,
 ) -> Result<Value> {
     if let Some(v) = get_values(matches, arg) {
-        let is_list = arg.is_multiple_values_set() || arg.is_multiple_occurrences_set();
+        let is_list = arg.is_multiple_values_set()
+            || arg.is_multiple_occurrences_set()
+            || arg.is_use_value_delimiter_set();
         let v: Vec<_> = v
             .into_iter()
             .map(|i| if i.is_empty() { "''".to_string() } else { i })

@@ -346,6 +346,78 @@ mod test_cmd {
         Ok(())
     }
 
+    #[test]
+    fn use_value_delimiter() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "users": ["joe", "john"],
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command =
+            Command::new("test").args([Arg::new("users").use_value_delimiter(true).short('u')]);
+        let args = ["test", "-u", "joe,john"];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    #[test]
+    fn use_value_delimiter_single() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "users": ["joe"],
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command =
+            Command::new("test").args([Arg::new("users").use_value_delimiter(true).short('u')]);
+        let args = ["test", "-u", "joe"];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    #[test]
+    fn multiple_values() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "users": ["joe", "john"],
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command = Command::new("test").args([Arg::new("users")
+            .multiple_values(true)
+            .takes_value(true)
+            .short('u')]);
+        let args = ["test", "-u", "joe", "john"];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    #[test]
+    fn multiple_values_single() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "users": ["joe"],
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command = Command::new("test").args([Arg::new("users")
+            .multiple_values(true)
+            .takes_value(true)
+            .short('u')]);
+        let args = ["test", "-u", "joe"];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
     fn user_add(expected: Value, global_on: bool) -> AnyResult<()> {
         println!("expected: {:?}", expected);
 
