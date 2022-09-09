@@ -1,5 +1,9 @@
 # ChangeLog
 
+## 2022-09-09 -- 2.3.2
+
+Fixed issue for `use_value_delimiter` with single value in `cmd` parser.
+
 ## 2022-09-07 -- 2.3.1
 
 Fixed implicit conversion of `crate::Error` to `anyhow::Error`.
