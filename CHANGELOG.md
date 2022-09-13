@@ -1,5 +1,14 @@
 # ChangeLog
 
+## 2022-09-13 -- 2.4.0
+
+Changes:
+
+* Upgrade [clap](https://docs.rs/clap/) dependency to the next minor version `3.2.x`.
+* Upgrade [serde_yaml](https://docs.rs/serde_yaml/) dependency to the next minor version `0.9.x`.
+* Upgrade [derive_builder](https://docs.rs/derive_builder/) dependency to the next minor version `0.11.x`.
+* Added a new setting `use_arg_types` to `cmd` parser. If that setting is set to `true` then use `ArgAction` or `ValueParser` type to calculate type of an argument. Default is `false`.
+
 ## 2022-09-09 -- 2.3.2
 
 Fixed issue for `use_value_delimiter` with single value in `cmd` parser.

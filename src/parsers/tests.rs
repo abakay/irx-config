@@ -237,7 +237,7 @@ mod toml_test {
 mod test_cmd {
     use super::*;
     use crate::parsers::cmd::ParserBuilder;
-    use clap::{Arg, Command};
+    use clap::{value_parser, Arg, ArgAction, Command};
 
     fn create_app_with_subcmds<'a>() -> Command<'a> {
         let user_args = [
@@ -416,6 +416,82 @@ mod test_cmd {
         println!("calculated: {:?}", calculated);
         assert_eq!(expected, *calculated);
         Ok(())
+    }
+
+    #[test]
+    fn action_set_true_false() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "enable": true,
+            "disable": false,
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command = Command::new("test").args([
+            Arg::new("enable").short('e').action(ArgAction::SetTrue),
+            Arg::new("disable").short('d').action(ArgAction::SetFalse),
+        ]);
+        let args = ["test", "-e", "-d"];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    fn arg_types(args: &[&str], expected: Value, use_arg_types: bool) -> AnyResult<()> {
+        let command = Command::new("test").args([
+            Arg::new("age")
+                .short('a')
+                .value_parser(value_parser!(u32))
+                .takes_value(true),
+            Arg::new("year")
+                .short('y')
+                .value_parser(value_parser!(String))
+                .action(ArgAction::Append)
+                .takes_value(true),
+                Arg::new("month")
+                .short('m')
+                .value_parser(value_parser!(String))
+                .takes_value(true),
+        ]);
+
+        println!("expected: {:?}", expected);
+        let conf = ConfigBuilder::load_one(
+            ParserBuilder::new(command)
+                .args(args)
+                .use_arg_types(use_arg_types)
+                .build()?,
+        )?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    #[test]
+    fn use_arg_types() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "age": 42,
+            "year": ["2019", "2022"],
+            "month": "1",
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let args = ["test", "-a", "42", "-y", "2019", "-y", "2022", "-m", "'1'"];
+        arg_types(&args, expected, true)
+    }
+
+    #[test]
+    fn not_use_arg_types() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "age": 42,
+            "year": [2019, 2022],
+            "month": "1",
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let args = ["test", "-a", "42", "-y", "2019", "-y", "2022", "-m", r#""1""#];
+        arg_types(&args, expected, false)
     }
 
     fn user_add(expected: Value, global_on: bool) -> AnyResult<()> {
