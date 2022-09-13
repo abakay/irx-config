@@ -49,10 +49,15 @@
 //!     .load()?;
 //! ```
 
-use crate::{AnyResult, Case, Parse, StdResult, Value, DEFAULT_KEYS_SEPARATOR};
-use clap::{Arg, ArgMatches, Command};
+use crate::{AnyResult, Case, CowString, Parse, StdResult, Value, DEFAULT_KEYS_SEPARATOR};
+use clap::{value_parser, Arg, ArgAction, ArgMatches, Command};
 use serde_yaml::Value as YamlValue;
-use std::{borrow::Cow, env, ffi::OsString};
+use std::{
+    borrow::Cow,
+    env,
+    ffi::{OsStr, OsString},
+    path::PathBuf,
+};
 
 /// A result type for current module errors.
 pub type Result<T> = StdResult<T, Error>;
@@ -101,6 +106,7 @@ pub struct ParserBuilder<'a> {
     case_sensitive: bool,
     exit_on_error: bool,
     single_flags_as_bool: bool,
+    use_arg_types: bool,
 }
 
 impl<'a> ParserBuilder<'a> {
@@ -116,6 +122,7 @@ impl<'a> ParserBuilder<'a> {
             case_sensitive: true,
             exit_on_error: false,
             single_flags_as_bool: false,
+            use_arg_types: false,
         }
     }
 
@@ -173,11 +180,20 @@ impl<'a> ParserBuilder<'a> {
     /// If this setting is set to `true` and a parameter **not allowed to have multiple occurrences** by `clap` API
     /// then parameter's value will have boolean `true` as a value.
     ///
-    /// **NOTE**: That default values for that setting is `false` now, but it probably will be changed to `true`
+    /// **NOTE:** That default values for that setting is `false` now, but it probably will be changed to `true`
     /// in next major release version to provide more ergonomic API.
     #[inline]
     pub fn single_flags_as_bool(&mut self, on: bool) -> &mut Self {
         self.single_flags_as_bool = on;
+        self
+    }
+
+    /// Use `ArgAction` or `ValueParser` type to calculate type of an argument. Default is `false`.
+    ///
+    /// **NOTE:** The default could be changed in next major release version.
+    #[inline]
+    pub fn use_arg_types(&mut self, on: bool) -> &mut Self {
+        self.use_arg_types = on;
         self
     }
 
@@ -229,13 +245,12 @@ impl<'a> ParserBuilder<'a> {
         };
 
         for arg in command.get_arguments() {
-            value = set_value(
+            value = self.set_value(
                 value,
                 matches,
                 &[&prefix, arg.get_id()].concat(),
                 &self.keys_delimiter,
                 arg,
-                self.single_flags_as_bool,
             )?;
         }
 
@@ -257,48 +272,75 @@ impl<'a> ParserBuilder<'a> {
 
         Ok(value)
     }
-}
 
-fn get_values(matches: &ArgMatches, arg: &Arg) -> Option<Vec<String>> {
-    let id = arg.get_id();
-    if arg.is_allow_invalid_utf8_set() {
-        return matches.values_of_lossy(id);
-    }
+    fn set_value(
+        &self,
+        mut value: Value,
+        matches: &ArgMatches,
+        path: &str,
+        delim: &str,
+        arg: &Arg,
+    ) -> Result<Value> {
+        if let Some(v) = matches.get_raw(arg.get_id()) {
+            let is_string = is_arg_string(arg);
+            let v: Vec<_> = v
+                .map(|i| norm_arg_value(i, self.use_arg_types, is_string))
+                .collect();
 
-    matches
-        .values_of(id)
-        .map(|v| v.map(|i| i.to_string()).collect())
-}
-
-fn set_value(
-    mut value: Value,
-    matches: &ArgMatches,
-    path: &str,
-    delim: &str,
-    arg: &Arg,
-    single_flags_as_bool: bool,
-) -> Result<Value> {
-    if let Some(v) = get_values(matches, arg) {
-        let is_list = arg.is_multiple_values_set()
-            || arg.is_multiple_occurrences_set()
-            || arg.is_use_value_delimiter_set();
-        let v: Vec<_> = v
-            .into_iter()
-            .map(|i| if i.is_empty() { "''".to_string() } else { i })
-            .collect();
-
-        let v = match v[..] {
-            [ref a] if !is_list => Cow::Borrowed(a),
-            [] if !arg.is_takes_value_set() => {
-                if single_flags_as_bool && !arg.is_multiple_occurrences_set() {
-                    Cow::Owned("true".to_string())
-                } else {
-                    Cow::Owned(matches.occurrences_of(arg.get_id()).to_string())
+            let v = match v[..] {
+                [ref a] if !is_arg_list(arg) => a.clone(),
+                [] if !arg.is_takes_value_set() => {
+                    if self.single_flags_as_bool && !arg.is_multiple_occurrences_set() {
+                        Cow::Borrowed("true")
+                    } else {
+                        Cow::Owned(matches.occurrences_of(arg.get_id()).to_string())
+                    }
                 }
-            }
-            _ => Cow::Owned(["[", &v.join(","), "]"].concat()),
-        };
-        value.set_by_key_path_with_delim(path, delim, serde_yaml::from_str::<YamlValue>(&v)?)?;
+                _ => Cow::Owned(["[", &v.join(","), "]"].concat()),
+            };
+            value.set_by_key_path_with_delim(
+                path,
+                delim,
+                serde_yaml::from_str::<YamlValue>(&v)?,
+            )?;
+        }
+        Ok(value)
     }
-    Ok(value)
+}
+
+fn is_arg_list(arg: &Arg) -> bool {
+    match arg.get_action() {
+        ArgAction::Append => true,
+        ArgAction::StoreValue => {
+            arg.is_multiple_values_set()
+                || arg.is_multiple_occurrences_set()
+                || arg.is_use_value_delimiter_set()
+        }
+        _ => false,
+    }
+}
+
+fn is_arg_string(arg: &Arg) -> bool {
+    let type_id = arg.get_value_parser().type_id();
+    type_id == value_parser!(String).type_id()
+        || type_id == value_parser!(OsString).type_id()
+        || type_id == value_parser!(PathBuf).type_id()
+}
+
+fn norm_arg_value(value: &OsStr, use_type: bool, is_string: bool) -> CowString {
+    fn quote(c: char) -> bool {
+        c == '\'' || c == '"'
+    }
+
+    let is_string = use_type && is_string;
+    if (is_string || !use_type) && value.is_empty() {
+        return CowString::Borrowed("''");
+    }
+
+    let val = value.to_string_lossy();
+    if is_string && !val.starts_with(quote) && !val.ends_with(quote) {
+        return CowString::Owned(["'", &val, "'"].concat());
+    }
+
+    val
 }

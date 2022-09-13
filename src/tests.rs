@@ -306,7 +306,7 @@ mod config {
 
     #[test]
     fn display_debug() -> AnyResult<()> {
-        let expected = r#"Config { parsers: size(1), value: Value { value: Object({"connections": Object({"node-1": String("tcp://node-1"), "node-2": String("tcp://node-2")}), "settings": Object({"id": Number(2), "logger": String("from second"), "name": String("node-2")})}), sealed: None, sealed_state: On, case_on: true }, case_on: true, hash: Hash(0x3b60528a5998a64869665a652c6c483ed448c1ca752115285049986c91ad28b68c76e90decb141e9d79d1fb26aea80b21c262b1b74fe39863ff461516272631f), sealed_suffix: "", keys_delimiter: ":" }"#;
+        let expected = r#"Config { parsers: size(1), value: Value { value: Object {"connections": Object {"node-1": String("tcp://node-1"), "node-2": String("tcp://node-2")}, "settings": Object {"id": Number(2), "logger": String("from second"), "name": String("node-2")}}, sealed: None, sealed_state: On, case_on: true }, case_on: true, hash: Hash(0x3b60528a5998a64869665a652c6c483ed448c1ca752115285049986c91ad28b68c76e90decb141e9d79d1fb26aea80b21c262b1b74fe39863ff461516272631f), sealed_suffix: "", keys_delimiter: ":" }"#;
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         println!("{:?}", conf);
         assert_eq!(expected, format!("{:?}", conf));
@@ -579,7 +579,7 @@ mod value {
         value.seal("_sealed_").set_by_key_path("settings:id", 42)?;
 
         let expected =
-            r#"Value { value: Object({}), sealed: None, sealed_state: Mutated, case_on: true }"#;
+            r#"Value { value: Object {}, sealed: None, sealed_state: Mutated, case_on: true }"#;
         let value = format!("{:?}", value);
         println!("value: {}", value);
         assert_eq!(expected, value);
