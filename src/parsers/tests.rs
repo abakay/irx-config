@@ -239,25 +239,25 @@ mod test_cmd {
     use crate::parsers::cmd::ParserBuilder;
     use clap::{value_parser, Arg, ArgAction, Command};
 
-    fn create_app_with_subcmds<'a>() -> Command<'a> {
+    fn create_app_with_subcmds() -> Command {
         let user_args = [
-            Arg::new("name:first").short('n').takes_value(true),
-            Arg::new("enabled").short('e').global(true),
+            Arg::new("name:first").short('n'),
+            Arg::new("enabled")
+                .short('e')
+                .action(ArgAction::SetTrue)
+                .global(true),
         ];
 
         let alias_args = [
-            Arg::new("name").short('a').takes_value(true).required(true),
-            Arg::new("enabled").short('e').global(true),
+            Arg::new("name").short('a').required(true),
+            Arg::new("enabled")
+                .short('e')
+                .action(ArgAction::SetTrue)
+                .global(true),
         ];
 
         Command::new("test")
-            .arg(
-                Arg::new("config")
-                    .short('c')
-                    .long("config")
-                    .takes_value(true)
-                    .required(true),
-            )
+            .arg(Arg::new("config").short('c').long("config").required(true))
             .subcommand(
                 Command::new("user")
                     .subcommand(Command::new("add").args(&user_args))
@@ -282,19 +282,14 @@ mod test_cmd {
         println!("expected: {:?}", expected);
 
         let command = Command::new("test").args([
-            Arg::new("name")
-                .short('n')
-                .long("name")
-                .takes_value(true)
-                .required(true),
+            Arg::new("name").short('n').long("name").required(true),
             Arg::new("timeout")
-                .multiple_occurrences(true)
+                .action(ArgAction::Append)
                 .short('t')
-                .long("timeout")
-                .takes_value(true),
-            Arg::new("tag").short('T').takes_value(true),
-            Arg::new("verbose").multiple_occurrences(true).short('v'),
-            Arg::new("debug").short('d'),
+                .long("timeout"),
+            Arg::new("tag").short('T'),
+            Arg::new("verbose").action(ArgAction::Count).short('v'),
+            Arg::new("debug").short('d').action(ArgAction::Count),
         ]);
         let args = [
             "test",
@@ -314,30 +309,10 @@ mod test_cmd {
             "''",
             "-d",
         ];
-        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
-        let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
-        assert_eq!(expected, *calculated);
-        Ok(())
-    }
-
-    #[test]
-    fn single_flags_as_bool() -> AnyResult<()> {
-        let expected = Value::try_from(json!({
-            "verbose": 1,
-            "debug": true,
-        }))?;
-        println!("expected: {:?}", expected);
-
-        let command = Command::new("test").args([
-            Arg::new("verbose").multiple_occurrences(true).short('v'),
-            Arg::new("debug").short('d'),
-        ]);
-        let args = ["test", "-v", "-d"];
         let conf = ConfigBuilder::load_one(
             ParserBuilder::new(command)
                 .args(args)
-                .single_flags_as_bool(true)
+                .use_arg_types(false)
                 .build()?,
         )?;
         let calculated = conf.get_value();
@@ -354,7 +329,7 @@ mod test_cmd {
         println!("expected: {:?}", expected);
 
         let command =
-            Command::new("test").args([Arg::new("users").use_value_delimiter(true).short('u')]);
+            Command::new("test").args([Arg::new("users").value_delimiter(',').short('u')]);
         let args = ["test", "-u", "joe,john"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
@@ -371,7 +346,7 @@ mod test_cmd {
         println!("expected: {:?}", expected);
 
         let command =
-            Command::new("test").args([Arg::new("users").use_value_delimiter(true).short('u')]);
+            Command::new("test").args([Arg::new("users").value_delimiter(',').short('u')]);
         let args = ["test", "-u", "joe"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
@@ -381,36 +356,15 @@ mod test_cmd {
     }
 
     #[test]
-    fn multiple_values() -> AnyResult<()> {
+    fn not_use_value_delimiter() -> AnyResult<()> {
         let expected = Value::try_from(json!({
-            "users": ["joe", "john"],
+            "users": "joe,john",
         }))?;
         println!("expected: {:?}", expected);
 
-        let command = Command::new("test").args([Arg::new("users")
-            .multiple_values(true)
-            .takes_value(true)
-            .short('u')]);
-        let args = ["test", "-u", "joe", "john"];
-        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
-        let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
-        assert_eq!(expected, *calculated);
-        Ok(())
-    }
-
-    #[test]
-    fn multiple_values_single() -> AnyResult<()> {
-        let expected = Value::try_from(json!({
-            "users": ["joe"],
-        }))?;
-        println!("expected: {:?}", expected);
-
-        let command = Command::new("test").args([Arg::new("users")
-            .multiple_values(true)
-            .takes_value(true)
-            .short('u')]);
-        let args = ["test", "-u", "joe"];
+        let command =
+            Command::new("test").args([Arg::new("users").value_delimiter(None).short('u')]);
+        let args = ["test", "-u", "joe,john"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
         println!("calculated: {:?}", calculated);
@@ -440,19 +394,14 @@ mod test_cmd {
 
     fn arg_types(args: &[&str], expected: Value, use_arg_types: bool) -> AnyResult<()> {
         let command = Command::new("test").args([
-            Arg::new("age")
-                .short('a')
-                .value_parser(value_parser!(u32))
-                .takes_value(true),
+            Arg::new("age").short('a').value_parser(value_parser!(u32)),
             Arg::new("year")
                 .short('y')
                 .value_parser(value_parser!(String))
-                .action(ArgAction::Append)
-                .takes_value(true),
-                Arg::new("month")
+                .action(ArgAction::Append),
+            Arg::new("month")
                 .short('m')
-                .value_parser(value_parser!(String))
-                .takes_value(true),
+                .value_parser(value_parser!(String)),
         ]);
 
         println!("expected: {:?}", expected);
@@ -490,7 +439,9 @@ mod test_cmd {
         }))?;
         println!("expected: {:?}", expected);
 
-        let args = ["test", "-a", "42", "-y", "2019", "-y", "2022", "-m", r#""1""#];
+        let args = [
+            "test", "-a", "42", "-y", "2019", "-y", "2022", "-m", r#""1""#,
+        ];
         arg_types(&args, expected, false)
     }
 
@@ -529,7 +480,7 @@ mod test_cmd {
                     "name": {
                         "first": "John"
                     },
-                    "enabled": 1
+                    "enabled": true
                 }
             }
         }))?;
@@ -544,7 +495,7 @@ mod test_cmd {
             "name": {
                 "first": "John"
             },
-            "enabled": 1
+            "enabled": true
         }))?;
 
         user_add(expected, true)

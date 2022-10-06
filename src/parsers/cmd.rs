@@ -22,7 +22,7 @@
 //! use irx_config::parsers::cmd::ParserBuilder;
 //!
 //! let command = command!()
-//!             .arg(Arg::new("settings:host").short('H').long("host").takes_value(true));
+//!             .arg(Arg::new("settings:host").short('H').long("host"));
 //!
 //! let config = ConfigBuilder::default()
 //!     .append_parser(ParserBuilder::new(command).build()?)
@@ -41,7 +41,7 @@
 //! let command = command!()
 //!             .subcommand(
 //!                 Command::new("connect")
-//!                     .arg(Arg::new("host").short('H').long("host").takes_value(true))
+//!                     .arg(Arg::new("host").short('H').long("host"))
 //!             );
 //!
 //! let config = ConfigBuilder::default()
@@ -50,7 +50,7 @@
 //! ```
 
 use crate::{AnyResult, Case, CowString, Parse, StdResult, Value, DEFAULT_KEYS_SEPARATOR};
-use clap::{value_parser, Arg, ArgAction, ArgMatches, Command};
+use clap::{error::Result as ClapResult, value_parser, Arg, ArgAction, ArgMatches, Command};
 use serde_yaml::Value as YamlValue;
 use std::{
     borrow::Cow,
@@ -97,22 +97,21 @@ impl Parse for Parser {
 }
 
 /// Builder for [`Parser`].
-pub struct ParserBuilder<'a> {
-    command: Command<'a>,
+pub struct ParserBuilder {
+    command: Command,
     args: Option<Vec<OsString>>,
     global_key_names: bool,
     max_depth: u8,
     keys_delimiter: String,
     case_sensitive: bool,
     exit_on_error: bool,
-    single_flags_as_bool: bool,
     use_arg_types: bool,
 }
 
-impl<'a> ParserBuilder<'a> {
+impl ParserBuilder {
     /// Create [`ParserBuilder`] from `clap::Command` instance.
     #[inline]
-    pub fn new(command: Command<'a>) -> Self {
+    pub fn new(command: Command) -> Self {
         Self {
             command,
             args: Default::default(),
@@ -121,8 +120,7 @@ impl<'a> ParserBuilder<'a> {
             keys_delimiter: DEFAULT_KEYS_SEPARATOR.to_string(),
             case_sensitive: true,
             exit_on_error: false,
-            single_flags_as_bool: false,
-            use_arg_types: false,
+            use_arg_types: true,
         }
     }
 
@@ -176,21 +174,7 @@ impl<'a> ParserBuilder<'a> {
         self
     }
 
-    /// By default all command-line parameters without values will have they values set to number of they occurrences.
-    /// If this setting is set to `true` and a parameter **not allowed to have multiple occurrences** by `clap` API
-    /// then parameter's value will have boolean `true` as a value.
-    ///
-    /// **NOTE:** That default values for that setting is `false` now, but it probably will be changed to `true`
-    /// in next major release version to provide more ergonomic API.
-    #[inline]
-    pub fn single_flags_as_bool(&mut self, on: bool) -> &mut Self {
-        self.single_flags_as_bool = on;
-        self
-    }
-
-    /// Use `ArgAction` or `ValueParser` type to calculate type of an argument. Default is `false`.
-    ///
-    /// **NOTE:** The default could be changed in next major release version.
+    /// Use `ArgAction` or `ValueParser` type to calculate type of an argument. Default is `true`.
     #[inline]
     pub fn use_arg_types(&mut self, on: bool) -> &mut Self {
         self.use_arg_types = on;
@@ -222,7 +206,7 @@ impl<'a> ParserBuilder<'a> {
         Ok(Parser { value })
     }
 
-    fn get_matches(&mut self) -> clap::Result<ArgMatches> {
+    fn get_matches(&mut self) -> ClapResult<ArgMatches> {
         if let Some(ref args) = self.args {
             self.command.try_get_matches_from_mut(args)
         } else {
@@ -248,7 +232,7 @@ impl<'a> ParserBuilder<'a> {
             value = self.set_value(
                 value,
                 matches,
-                &[&prefix, arg.get_id()].concat(),
+                &[&prefix, arg.get_id().as_str()].concat(),
                 &self.keys_delimiter,
                 arg,
             )?;
@@ -281,21 +265,14 @@ impl<'a> ParserBuilder<'a> {
         delim: &str,
         arg: &Arg,
     ) -> Result<Value> {
-        if let Some(v) = matches.get_raw(arg.get_id()) {
+        if let Some(v) = matches.get_raw(arg.get_id().as_str()) {
             let is_string = is_arg_string(arg);
             let v: Vec<_> = v
                 .map(|i| norm_arg_value(i, self.use_arg_types, is_string))
                 .collect();
 
             let v = match v[..] {
-                [ref a] if !is_arg_list(arg) => a.clone(),
-                [] if !arg.is_takes_value_set() => {
-                    if self.single_flags_as_bool && !arg.is_multiple_occurrences_set() {
-                        Cow::Borrowed("true")
-                    } else {
-                        Cow::Owned(matches.occurrences_of(arg.get_id()).to_string())
-                    }
-                }
+                [ref a] if !is_arg_list(arg) => Cow::Borrowed(a.as_ref()),
                 _ => Cow::Owned(["[", &v.join(","), "]"].concat()),
             };
             value.set_by_key_path_with_delim(
@@ -311,12 +288,7 @@ impl<'a> ParserBuilder<'a> {
 fn is_arg_list(arg: &Arg) -> bool {
     match arg.get_action() {
         ArgAction::Append => true,
-        ArgAction::StoreValue => {
-            arg.is_multiple_values_set()
-                || arg.is_multiple_occurrences_set()
-                || arg.is_use_value_delimiter_set()
-        }
-        _ => false,
+        _ => arg.get_value_delimiter().is_some(),
     }
 }
 
