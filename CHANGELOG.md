@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 2022-10-06 -- 3.0.0
+
+Changes:
+
+* Upgrade [clap](https://docs.rs/clap/) dependency to the next major version `4.0.x`.
+* Remove `single_flags_as_bool` setting from `cmd` parser. That functionality should be achieved via `clap::ArgAction`.
+* The default value of `use_arg_types` settings was changed to `true`.
+
 ## 2022-09-13 -- 2.4.0
 
 Changes:

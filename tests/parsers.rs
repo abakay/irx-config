@@ -1,6 +1,6 @@
 #[cfg(all(feature = "env", feature = "json", feature = "yaml", feature = "cmd"))]
 mod integration {
-    use clap::{Arg, Command};
+    use clap::{Arg, ArgAction, Command};
     use irx_config::parsers::{cmd, env, json, yaml};
     use irx_config::{json, AnyResult, ConfigBuilder, MergeCase, Value};
     use std::env as StdEnv;
@@ -35,20 +35,15 @@ mod integration {
         }
     }
 
-    fn create_app<'a>() -> Command<'a> {
+    fn create_app() -> Command {
         Command::new("test").version("1.0").args([
-            Arg::new("config")
-                .short('c')
-                .long("config")
-                .takes_value(true)
-                .required(true),
+            Arg::new("config").short('c').long("config").required(true),
             Arg::new("settings:name")
                 .short('n')
                 .long("name")
-                .takes_value(true)
                 .required(true),
-            Arg::new("logger:timeout").short('t').takes_value(true),
-            Arg::new("verbose").short('v'),
+            Arg::new("logger:timeout").short('t'),
+            Arg::new("verbose").short('v').action(ArgAction::Count),
         ])
     }
 
@@ -65,7 +60,10 @@ mod integration {
             "1000",
             "-v",
         ];
-        let cmd_parser = cmd::ParserBuilder::new(create_app()).args(args).build()?;
+        let cmd_parser = cmd::ParserBuilder::new(create_app())
+            .args(args)
+            .use_arg_types(false)
+            .build()?;
 
         let yaml_path = resource_path!("config.yaml");
 
