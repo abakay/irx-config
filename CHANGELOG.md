@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 2022-10-08 -- 3.1.0
+
+Changes:
+
+* Fixed issue with default values for `clap` command-line parameters.
+* Added a new setting `use_defaults` to `cmd` parser. Use defaults from `clap` arguments. Default is `false`.
+**IMPORTANT:** Once that setting will be set to `true` then all defined command-line parameters will have values which will override values with same key(s) from parsers which was added to `ConfigBuilder` after this parser.
+
 ## 2022-10-06 -- 3.0.0
 
 Changes:

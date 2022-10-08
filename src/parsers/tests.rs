@@ -500,4 +500,82 @@ mod test_cmd {
 
         user_add(expected, true)
     }
+
+    #[test]
+    fn not_use_defaults_for_bool() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "config": "config.toml"
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command = Command::new("test").args([
+            Arg::new("config").short('c'),
+            Arg::new("enable").short('e').action(ArgAction::SetTrue),
+        ]);
+        let args = ["test", "-c", "config.toml"];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    #[test]
+    fn use_defaults() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "config": "default.toml",
+            "enable": false,
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let command = Command::new("test").args([
+            Arg::new("config").short('c').default_value("default.toml"),
+            Arg::new("enable").short('e').action(ArgAction::SetTrue),
+        ]);
+        let args = ["test"];
+        let conf = ConfigBuilder::load_one(
+            ParserBuilder::new(command)
+                .args(args)
+                .use_defaults(true)
+                .build()?,
+        )?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    fn not_use_defaults_for_string(explicit: bool) -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "enable": true
+        }))?;
+        println!("expected: {:?}", expected);
+
+        let config_arg = if explicit {
+            Arg::new("config").short('c').default_value("default.toml")
+        } else {
+            Arg::new("config").short('c')
+        };
+
+        let command = Command::new("test").args([
+            config_arg,
+            Arg::new("enable").short('e').action(ArgAction::SetTrue),
+        ]);
+        let args = ["test", "-e"];
+        let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
+        let calculated = conf.get_value();
+        println!("calculated: {:?}", calculated);
+        assert_eq!(expected, *calculated);
+        Ok(())
+    }
+
+    #[test]
+    fn not_use_defaults_implicit_for_string() -> AnyResult<()> {
+        not_use_defaults_for_string(false)
+    }
+
+    #[test]
+    fn not_use_defaults_explicit_for_string() -> AnyResult<()> {
+        not_use_defaults_for_string(true)
+    }
 }
