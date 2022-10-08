@@ -1,7 +1,7 @@
 #[cfg(all(feature = "env", feature = "json", feature = "yaml", feature = "cmd"))]
 mod integration {
     use clap::{Arg, ArgAction, Command};
-    use irx_config::parsers::{cmd, env, json, yaml};
+    use irx_config::parsers::{cmd, env, json, toml, yaml};
     use irx_config::{json, AnyResult, ConfigBuilder, MergeCase, Value};
     use std::env as StdEnv;
 
@@ -227,6 +227,37 @@ mod integration {
         for (expected, env_case, merge_case) in tests_params {
             test_case(expected, env_case, merge_case)?;
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn not_use_cmd_defaults() -> AnyResult<()> {
+        let expected = Value::try_from(json!({
+            "command": "install",
+            "enable": true,
+        }))
+        .unwrap();
+
+        let command = Command::new("test").version("1.0").args([
+            Arg::new("command").short('c').long("command"),
+            Arg::new("enable").short('e').action(ArgAction::SetTrue),
+        ]);
+
+        let toml_path = resource_path!("defaults.toml");
+        let args = ["test"];
+        let cmd_parser = cmd::ParserBuilder::new(command).args(args).build()?;
+        let toml_parser = toml::ParserBuilder::default()
+            .default_path(toml_path)
+            .path_option("config")
+            .build()?;
+
+        let config = ConfigBuilder::default()
+            .append_parser(cmd_parser)
+            .append_parser(toml_parser)
+            .load()?;
+        println!("{}", config);
+        assert_eq!(expected, *config.get_value());
 
         Ok(())
     }

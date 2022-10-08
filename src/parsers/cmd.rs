@@ -6,7 +6,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! irx-config = { version = "2.2", features = ["cmd"] }
+//! irx-config = { version = "3.1", features = ["cmd"] }
 //! ```
 //!
 //! # Examples
@@ -50,7 +50,10 @@
 //! ```
 
 use crate::{AnyResult, Case, CowString, Parse, StdResult, Value, DEFAULT_KEYS_SEPARATOR};
-use clap::{error::Result as ClapResult, value_parser, Arg, ArgAction, ArgMatches, Command};
+use clap::{
+    error::Result as ClapResult, parser::ValueSource, value_parser, Arg, ArgAction, ArgMatches,
+    Command,
+};
 use serde_yaml::Value as YamlValue;
 use std::{
     borrow::Cow,
@@ -106,6 +109,7 @@ pub struct ParserBuilder {
     case_sensitive: bool,
     exit_on_error: bool,
     use_arg_types: bool,
+    use_defaults: bool,
 }
 
 impl ParserBuilder {
@@ -121,6 +125,7 @@ impl ParserBuilder {
             case_sensitive: true,
             exit_on_error: false,
             use_arg_types: true,
+            use_defaults: false,
         }
     }
 
@@ -181,6 +186,16 @@ impl ParserBuilder {
         self
     }
 
+    /// Use defaults from `clap` arguments. Default is `false`.
+    ///
+    /// **IMPORTANT:** Once that setting will be set to `true` then all defined command-line parameters will have values
+    /// which will override values with same key(s) from parsers which was added to `ConfigBuilder` after this parser.
+    #[inline]
+    pub fn use_defaults(&mut self, on: bool) -> &mut Self {
+        self.use_defaults = on;
+        self
+    }
+
     /// Build and return command-line parser [`Parser`].
     ///
     /// # Errors
@@ -228,7 +243,12 @@ impl ParserBuilder {
             [app_name, &self.keys_delimiter].concat()
         };
 
-        for arg in command.get_arguments() {
+        for arg in command.get_arguments().filter(|a| {
+            let source = matches.value_source(a.get_id().as_str());
+            source == Some(ValueSource::CommandLine)
+                || source == Some(ValueSource::EnvVariable)
+                || self.use_defaults && source == Some(ValueSource::DefaultValue)
+        }) {
             value = self.set_value(
                 value,
                 matches,
