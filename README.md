@@ -1,3 +1,7 @@
+# irx-config library
+
+![GitHub top language](https://img.shields.io/github/languages/top/abakay/irx-config) ![Crates.io](https://img.shields.io/crates/v/irx-config) ![Crates.io](https://img.shields.io/crates/l/irx-config) ![Crates.io](https://img.shields.io/crates/d/irx-config) ![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/cargo/irx-config) ![docs.rs](https://img.shields.io/docsrs/irx-config)
+
 The `irx-config` library provides convenient way to represent/parse configuration from different sources. The main
 goals is to be very easy to use and to be extendable.
 
@@ -22,7 +26,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.1", features = ["env", "json"] }
+irx-config = { version = "3.1.1", features = ["env", "json"] }
 ```
 
 ```rust
@@ -61,7 +65,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.1", features = ["cmd", "env", "toml-parser"] }
+irx-config = { version = "3.1.1", features = ["cmd", "env", "toml-parser"] }
 ```
 
 ```rust
@@ -160,7 +164,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.1", features = ["json"] }
+irx-config = { version = "3.1.1", features = ["json"] }
 ```
 
 ```rust

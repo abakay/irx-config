@@ -27,8 +27,11 @@ use crate::parsers::{FileParserBuilder, Load};
 use crate::{AnyResult, Case, Value};
 use std::io::Read;
 
+/// Builder for `JSON5` parser.
+pub type ParserBuilder = FileParserBuilder<LoadJson>;
+
 /// Implements [`Load`] trait for `JSON5` parser.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct LoadJson;
 
 impl Case for LoadJson {}
@@ -39,17 +42,5 @@ impl Load for LoadJson {
         let mut data = String::new();
         reader.read_to_string(&mut data)?;
         Ok(json5::from_str(&data)?)
-    }
-}
-
-/// Builder for `JSON5` parser.
-pub struct ParserBuilder;
-
-impl ParserBuilder {
-    /// Construct instance of `JSON5` builder parser.
-    pub fn default() -> FileParserBuilder<LoadJson> {
-        let mut builder = FileParserBuilder::default();
-        builder.loader(LoadJson);
-        builder
     }
 }

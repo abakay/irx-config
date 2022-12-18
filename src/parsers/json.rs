@@ -27,8 +27,11 @@ use crate::parsers::{FileParserBuilder, Load};
 use crate::{AnyResult, Case, Value};
 use std::io::Read;
 
+/// Builder for `JSON` parser.
+pub type ParserBuilder = FileParserBuilder<LoadJson>;
+
 /// Implements [`Load`] trait for `JSON` parser.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct LoadJson;
 
 impl Case for LoadJson {}
@@ -37,17 +40,5 @@ impl Load for LoadJson {
     #[inline]
     fn load(&mut self, reader: impl Read) -> AnyResult<Value> {
         Ok(serde_json::from_reader(reader)?)
-    }
-}
-
-/// Builder for `JSON` parser.
-pub struct ParserBuilder;
-
-impl ParserBuilder {
-    /// Construct instance of `JSON` builder parser.
-    pub fn default() -> FileParserBuilder<LoadJson> {
-        let mut builder = FileParserBuilder::default();
-        builder.loader(LoadJson);
-        builder
     }
 }

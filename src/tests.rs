@@ -170,7 +170,7 @@ mod config {
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         let expected = conf.get_value();
         println!("expected: {:?}", expected);
-        assert_eq!(*expected, conf.get_by_keys::<&[&str], _, _>(&[])?.unwrap());
+        assert_eq!(*expected, conf.get_by_keys([""; 0])?.unwrap());
         Ok(())
     }
 
@@ -217,7 +217,8 @@ mod config {
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         assert_eq!(
             expected,
-            conf.get_by_key_path_with_delim::<Value, _, _>("connections/node-1", "/")?.unwrap()
+            conf.get_by_key_path_with_delim::<Value, _, _>("connections/node-1", "/")?
+                .unwrap()
         );
         Ok(())
     }
@@ -226,7 +227,7 @@ mod config {
     fn get_by_key_path_longer_path() -> AnyResult<()> {
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         let path = "connections:node-1:box:instance".to_owned();
-        assert_eq!(None, conf.get_by_key_path::<Value, _>(&path)?);
+        assert_eq!(None, conf.get_by_key_path::<Value, _>(path)?);
         Ok(())
     }
 

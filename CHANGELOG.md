@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 2022-12-18 -- 3.1.1
+
+Changes:
+
+* Fixed compilation/clippy warnings for `Rust 1.66.0`.
+* Upgrade [derive_builder](https://docs.rs/derive_builder/) dependency to the next minor version `0.12.x`.
+* Minor code improvements.
+
 ## 2022-10-08 -- 3.1.0
 
 Changes:

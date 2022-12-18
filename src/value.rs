@@ -263,7 +263,7 @@ impl Value {
             }
 
             if path.is_empty() {
-                return value.get_by_keys::<&[&str], _, _>(&[]);
+                return value.get_by_keys([""; 0]);
             }
 
             value.get_by_keys(path.split(delim))
@@ -422,7 +422,7 @@ impl Value {
             }
 
             if path.is_empty() {
-                return this.set_by_keys::<&[&str], _, _>(&[], value);
+                return this.set_by_keys([""; 0], value);
             }
 
             this.set_by_keys(path.split(delim), value)
