@@ -28,8 +28,11 @@ use crate::{AnyResult, Case, Value};
 use std::io::Read;
 use toml::Value as TomlValue;
 
+/// Builder for `TOML` parser.
+pub type ParserBuilder = FileParserBuilder<LoadToml>;
+
 /// Implements [`Load`] trait for `TOML` parser.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct LoadToml;
 
 impl Case for LoadToml {}
@@ -39,18 +42,6 @@ impl Load for LoadToml {
         let mut data = String::new();
         reader.read_to_string(&mut data)?;
         Ok(Value::try_from(normalize(&mut toml::from_str(&data)?))?)
-    }
-}
-
-/// Builder for `TOML` parser.
-pub struct ParserBuilder;
-
-impl ParserBuilder {
-    /// Construct instance of `TOML` builder parser.
-    pub fn default() -> FileParserBuilder<LoadToml> {
-        let mut builder = FileParserBuilder::default();
-        builder.loader(LoadToml);
-        builder
     }
 }
 

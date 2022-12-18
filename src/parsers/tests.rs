@@ -82,7 +82,7 @@ mod json_test {
     #[test]
     fn parser() -> AnyResult<()> {
         let path = resource_path!("config.json");
-        let expected = fs::read_to_string(&path)?;
+        let expected = fs::read_to_string(path)?;
         let expected: Value = serde_json::from_str(&expected)?;
 
         let conf = ConfigBuilder::default()
@@ -153,7 +153,7 @@ mod json5_test {
     fn parser() -> AnyResult<()> {
         let path = resource_path!("config.json5");
         let expected_path = resource_path!("config.json");
-        let expected = fs::read_to_string(&expected_path)?;
+        let expected = fs::read_to_string(expected_path)?;
         let expected: Value = serde_json::from_str(&expected)?;
 
         let conf = ConfigBuilder::default()

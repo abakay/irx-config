@@ -35,7 +35,7 @@ pub trait Load: Case {
 /// The base structure to implement file based parsers.
 #[derive(Builder)]
 #[builder(setter(into, strip_option))]
-pub struct FileParser<L> {
+pub struct FileParser<L: Load + Default> {
     /// Set default path to the file to be parsed.
     default_path: PathBuf,
     /// Set path option name which could be used to get path value from previous parsing [`Value`] results.
@@ -48,17 +48,18 @@ pub struct FileParser<L> {
     #[builder(default = "false")]
     ignore_missing_file: bool,
     /// Set the loader structure which implements [`Load`] trait.
+    #[builder(default)]
     loader: L,
 }
 
-impl<L: Load> Case for FileParser<L> {
+impl<L: Load + Default> Case for FileParser<L> {
     #[inline]
     fn is_case_sensitive(&self) -> bool {
         self.loader.is_case_sensitive()
     }
 }
 
-impl<L: Load> Parse for FileParser<L> {
+impl<L: Load + Default> Parse for FileParser<L> {
     fn parse(&mut self, value: &Value) -> AnyResult<Value> {
         let path = if let Some(ref p) = self.path_option {
             value.get_by_key_path_with_delim(p, &self.keys_delimiter)?
