@@ -217,7 +217,7 @@ mod toml_test {
                 }
             ]
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let conf = ConfigBuilder::load_one(
             ParserBuilder::default()
@@ -226,7 +226,7 @@ mod toml_test {
                 .build()?,
         )?;
         let calculated: Value = conf.get()?;
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
 
         assert_eq!(expected, calculated);
         Ok(())
@@ -279,7 +279,7 @@ mod test_cmd {
             "debug": 1,
             "tag": ""
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let command = Command::new("test").args([
             Arg::new("name").short('n').long("name").required(true),
@@ -316,7 +316,7 @@ mod test_cmd {
                 .build()?,
         )?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -326,14 +326,14 @@ mod test_cmd {
         let expected = Value::try_from(json!({
             "users": ["joe", "john"],
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let command =
             Command::new("test").args([Arg::new("users").value_delimiter(',').short('u')]);
         let args = ["test", "-u", "joe,john"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -343,14 +343,14 @@ mod test_cmd {
         let expected = Value::try_from(json!({
             "users": ["joe"],
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let command =
             Command::new("test").args([Arg::new("users").value_delimiter(',').short('u')]);
         let args = ["test", "-u", "joe"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -360,14 +360,14 @@ mod test_cmd {
         let expected = Value::try_from(json!({
             "users": "joe,john",
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let command =
             Command::new("test").args([Arg::new("users").value_delimiter(None).short('u')]);
         let args = ["test", "-u", "joe,john"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -378,7 +378,7 @@ mod test_cmd {
             "enable": true,
             "disable": false,
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let command = Command::new("test").args([
             Arg::new("enable").short('e').action(ArgAction::SetTrue),
@@ -387,7 +387,7 @@ mod test_cmd {
         let args = ["test", "-e", "-d"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -404,7 +404,7 @@ mod test_cmd {
                 .value_parser(value_parser!(String)),
         ]);
 
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
         let conf = ConfigBuilder::load_one(
             ParserBuilder::new(command)
                 .args(args)
@@ -412,7 +412,7 @@ mod test_cmd {
                 .build()?,
         )?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -424,7 +424,7 @@ mod test_cmd {
             "year": ["2019", "2022"],
             "month": "1",
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let args = ["test", "-a", "42", "-y", "2019", "-y", "2022", "-m", "'1'"];
         arg_types(&args, expected, true)
@@ -437,7 +437,7 @@ mod test_cmd {
             "year": [2019, 2022],
             "month": "1",
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let args = [
             "test", "-a", "42", "-y", "2019", "-y", "2022", "-m", r#""1""#,
@@ -446,7 +446,7 @@ mod test_cmd {
     }
 
     fn user_add(expected: Value, global_on: bool) -> AnyResult<()> {
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let app = create_app_with_subcmds();
         let args = [
@@ -466,7 +466,7 @@ mod test_cmd {
                 .build()?,
         )?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -506,7 +506,7 @@ mod test_cmd {
         let expected = Value::try_from(json!({
             "config": "config.toml"
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let command = Command::new("test").args([
             Arg::new("config").short('c'),
@@ -515,7 +515,7 @@ mod test_cmd {
         let args = ["test", "-c", "config.toml"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -526,7 +526,7 @@ mod test_cmd {
             "config": "default.toml",
             "enable": false,
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let command = Command::new("test").args([
             Arg::new("config").short('c').default_value("default.toml"),
@@ -540,7 +540,7 @@ mod test_cmd {
                 .build()?,
         )?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }
@@ -549,7 +549,7 @@ mod test_cmd {
         let expected = Value::try_from(json!({
             "enable": true
         }))?;
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
 
         let config_arg = if explicit {
             Arg::new("config").short('c').default_value("default.toml")
@@ -564,7 +564,7 @@ mod test_cmd {
         let args = ["test", "-e"];
         let conf = ConfigBuilder::load_one(ParserBuilder::new(command).args(args).build()?)?;
         let calculated = conf.get_value();
-        println!("calculated: {:?}", calculated);
+        println!("calculated: {calculated:?}");
         assert_eq!(expected, *calculated);
         Ok(())
     }

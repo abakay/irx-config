@@ -1,7 +1,8 @@
 [package]
 name = "irx-config"
-version = "3.1.1"
+version = "3.2.0"
 edition = "2021"
+rust-version = "1.64.0"
 authors = ["Andriy Bakay <andriy@irbisx.com>"]
 description = "The library provides convenient way to represent/parse configuration from different sources"
 license = "BSD-2-Clause"
@@ -28,8 +29,8 @@ serde_json = "1.0"
 blake2b_simd = "1.0"
 derive_builder = { version = "0.12", optional = true }
 serde_yaml = { version = "0.9", optional = true }
-toml = { version = "0.5", optional = true }
-clap = { version = "4.0", optional = true }
+toml = { version = "0.7", optional = true }
+clap = { version = "4.1", optional = true }
 json5 = { version = "0.4", optional = true }
 
 [dev-dependencies]

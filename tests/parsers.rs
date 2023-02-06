@@ -1,8 +1,11 @@
 #[cfg(all(feature = "env", feature = "json", feature = "yaml", feature = "cmd"))]
 mod integration {
     use clap::{Arg, ArgAction, Command};
-    use irx_config::parsers::{cmd, env, json, toml, yaml};
-    use irx_config::{json, AnyResult, ConfigBuilder, MergeCase, Value};
+    use irx_config::{
+        json,
+        parsers::{cmd, env, json, toml, yaml},
+        AnyResult, ConfigBuilder, MergeCase, Value,
+    };
     use std::env as StdEnv;
 
     #[macro_export]
@@ -21,7 +24,7 @@ mod integration {
 
     fn format_option_bool(option: Option<bool>) -> String {
         if let Some(o) = option {
-            format!("{}", o)
+            format!("{o}")
         } else {
             "None".to_string()
         }
@@ -29,7 +32,7 @@ mod integration {
 
     fn format_option_merge_case(option: Option<MergeCase>) -> String {
         if let Some(o) = option {
-            format!("{:?}", o)
+            format!("{o:?}")
         } else {
             "None".to_string()
         }
@@ -92,7 +95,7 @@ mod integration {
             .append_parser(yaml_parser)
             .append_parser(env_parser)
             .load()?;
-        println!("{}", config);
+        println!("{config}");
         assert_eq!(expected, *config.get_value());
         Ok(())
     }
@@ -167,7 +170,7 @@ mod integration {
             builder = builder.merge_case(m)
         }
         let config = builder.load()?;
-        println!("{}", config);
+        println!("{config}");
         assert_eq!(
             expected,
             config.get_value(),
@@ -256,7 +259,7 @@ mod integration {
             .append_parser(cmd_parser)
             .append_parser(toml_parser)
             .load()?;
-        println!("{}", config);
+        println!("{config}");
         assert_eq!(expected, *config.get_value());
 
         Ok(())

@@ -6,8 +6,8 @@ use serde::de::DeserializeOwned;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-/// Container for all parsers which will (re)load data from parsers in order in which was added to [`ConfigBuilder`].
-/// It will provide access to merged set of (re)loaded configuration parameters.
+/// Container for all parser sources which will (re)load data from a parsers in order in which they was added
+/// to [`ConfigBuilder`]. It will provide access to merged set of (re)loaded configuration parameters.
 pub struct Config {
     parsers: Vec<AnyParser>,
     value: Value,

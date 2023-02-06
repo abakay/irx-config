@@ -47,20 +47,15 @@ pub enum Error {
 }
 
 /// Case mode to merging keys during (re)load.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum MergeCase {
     /// Auto detect merge case mode from appended parsers.
+    #[default]
     Auto,
     /// Enforce case sensitive merge mode.
     Sensitive,
     /// Enforce case insensitive merge mode.
     Insensitive,
-}
-
-impl Default for MergeCase {
-    fn default() -> Self {
-        Self::Auto
-    }
 }
 
 /// A data structure that has case-sensitive or case-insensitive keys.

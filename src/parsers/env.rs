@@ -25,8 +25,7 @@
 //!     .load()?;
 //! ```
 
-use crate::parsers::CowString;
-use crate::{AnyResult, Case, Parse, Value, DEFAULT_KEYS_SEPARATOR};
+use crate::{AnyResult, Case, CowString, Parse, Value, DEFAULT_KEYS_SEPARATOR};
 use derive_builder::Builder;
 use serde_yaml::Value as YamlValue;
 use std::env;
