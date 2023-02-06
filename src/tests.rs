@@ -114,8 +114,8 @@ mod config {
         let conf = ConfigBuilder::load_one(ValueParser::new(data))?;
         let person: Person = conf.get()?;
 
-        println!("Person: {:?}", person);
-        assert_eq!(format!("{:?}", expected), format!("{:?}", person));
+        println!("Person: {person:?}");
+        assert_eq!(format!("{expected:?}"), format!("{person:?}"));
         Ok(())
     }
 
@@ -137,8 +137,8 @@ mod config {
                 tag: "from third".to_owned(),
             },
         };
-        println!("{:?}", sections);
-        assert_eq!(format!("{:?}", s), format!("{:?}", sections));
+        println!("{sections:?}");
+        assert_eq!(format!("{s:?}"), format!("{sections:?}"));
         Ok(())
     }
 
@@ -154,7 +154,7 @@ mod config {
         "#;
         let conf = ConfigBuilder::load_one(JsonStringParser::new(data)).unwrap();
         let value: Value = conf.get().unwrap();
-        println!("{:?}", value);
+        println!("{value:?}");
     }
 
     #[test]
@@ -169,7 +169,7 @@ mod config {
     fn get_by_keys_empty() -> AnyResult<()> {
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         let expected = conf.get_value();
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
         assert_eq!(*expected, conf.get_by_keys([""; 0])?.unwrap());
         Ok(())
     }
@@ -178,7 +178,7 @@ mod config {
     fn get_by_key_path_empty() -> AnyResult<()> {
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         let expected = conf.get_value();
-        println!("expected: {:?}", expected);
+        println!("expected: {expected:?}");
         assert_eq!(*expected, conf.get_by_key_path("")?.unwrap());
         Ok(())
     }
@@ -254,7 +254,7 @@ mod config {
 }"#;
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         let conf = conf.to_string();
-        println!("{}", conf);
+        println!("{conf}");
         assert_eq!(expected, conf);
         Ok(())
     }
@@ -297,10 +297,10 @@ mod config {
             .append_parser(ValueParser::new(value))
             .load()?;
         let conf_str = serde_json::to_string_pretty(&conf.get_value())?;
-        println!("{}", conf_str);
+        println!("{conf_str}");
         assert_eq!(serde_json::to_string_pretty(&exp_value)?, conf_str);
         let conf = conf.to_string();
-        println!("{}", conf);
+        println!("{conf}");
         assert_eq!(expected, conf);
         Ok(())
     }
@@ -309,8 +309,8 @@ mod config {
     fn display_debug() -> AnyResult<()> {
         let expected = r#"Config { parsers: size(1), value: Value { value: Object {"connections": Object {"node-1": String("tcp://node-1"), "node-2": String("tcp://node-2")}, "settings": Object {"id": Number(2), "logger": String("from second"), "name": String("node-2")}}, sealed: None, sealed_state: On, case_on: true }, case_on: true, hash: Hash(0x3b60528a5998a64869665a652c6c483ed448c1ca752115285049986c91ad28b68c76e90decb141e9d79d1fb26aea80b21c262b1b74fe39863ff461516272631f), sealed_suffix: "", keys_delimiter: ":" }"#;
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
-        println!("{:?}", conf);
-        assert_eq!(expected, format!("{:?}", conf));
+        println!("{conf:?}");
+        assert_eq!(expected, format!("{conf:?}"));
         Ok(())
     }
 
@@ -349,10 +349,10 @@ mod config {
             .append_parser(ValueParser::new(value))
             .load()?;
         let conf_str = serde_json::to_string_pretty(&conf.get_value())?;
-        println!("{}", conf_str);
+        println!("{conf_str}");
         assert_eq!(serde_json::to_string_pretty(&exp_value)?, conf_str);
         let conf = conf.to_string();
-        println!("{}", conf);
+        println!("{conf}");
         assert_eq!(expected, conf);
         Ok(())
     }
@@ -410,7 +410,7 @@ mod value {
         }))?;
 
         value = value.merge(&dummy);
-        println!("value: {:?}", value);
+        println!("value: {value:?}");
 
         assert!(!value.is_sealed());
         Ok(())
@@ -426,7 +426,7 @@ mod value {
         let dummy = Value::try_from(json!(""))?;
 
         value = value.merge(&dummy);
-        println!("value: {:?}", value);
+        println!("value: {value:?}");
 
         assert!(value.is_sealed());
         Ok(())
@@ -456,7 +456,7 @@ mod value {
         }))?;
 
         person = person.merge(&phones);
-        println!("person: {}", person);
+        println!("person: {person}");
         assert_eq!(expected, person);
         Ok(())
     }
@@ -506,9 +506,9 @@ mod value {
         let prev = value.set_by_key_path("", 42)?.unwrap();
         let de_value: i32 = value.get()?;
 
-        println!("value: {:?}", value);
-        println!("value(deserialized): {:?}", de_value);
-        println!("prev: {:?}", prev);
+        println!("value: {value:?}");
+        println!("value(deserialized): {de_value:?}");
+        println!("prev: {prev:?}");
 
         assert_eq!(SealedState::Mutated, value.sealed_state());
         assert!(prev.is_sealed());
@@ -548,8 +548,8 @@ mod value {
         let expected = r#"{
   "id": 42
 }"#;
-        let value = format!("{}", value);
-        println!("value: {}", value);
+        let value = format!("{value}");
+        println!("value: {value}");
         assert_eq!(expected, value);
         Ok(())
     }
@@ -559,8 +559,8 @@ mod value {
         let mut value = Value::default();
         value.seal("").set_by_key_path("id", 42)?;
         let expected = r"{}";
-        let value = format!("{}", value);
-        println!("value: {}", value);
+        let value = format!("{value}");
+        println!("value: {value}");
         assert_eq!(expected, value);
         Ok(())
     }
@@ -581,8 +581,8 @@ mod value {
 
         let expected =
             r#"Value { value: Object {}, sealed: None, sealed_state: Mutated, case_on: true }"#;
-        let value = format!("{:?}", value);
-        println!("value: {}", value);
+        let value = format!("{value:?}");
+        println!("value: {value}");
         assert_eq!(expected, value);
         Ok(())
     }

@@ -16,11 +16,16 @@ pub mod toml;
 #[cfg(feature = "yaml")]
 pub mod yaml;
 
-use crate::{AnyResult, Case, CowString, Parse, Value, DEFAULT_KEYS_SEPARATOR};
+use crate::{AnyResult, Case, Parse, Value, DEFAULT_KEYS_SEPARATOR};
 use derive_builder::Builder;
-use std::fs::File;
-use std::io::{BufReader, Error, ErrorKind, Read, Result};
-use std::path::PathBuf;
+use std::{
+    borrow::Cow,
+    fs::File,
+    io::{BufReader, Error, ErrorKind, Read, Result},
+    path::{Path, PathBuf},
+};
+
+type CowPath<'a> = Cow<'a, Path>;
 
 /// The trait to be used by [`FileParser`] to load data from file in specific format.
 pub trait Load: Case {
@@ -61,13 +66,12 @@ impl<L: Load + Default> Case for FileParser<L> {
 
 impl<L: Load + Default> Parse for FileParser<L> {
     fn parse(&mut self, value: &Value) -> AnyResult<Value> {
-        let path = if let Some(ref p) = self.path_option {
-            value.get_by_key_path_with_delim(p, &self.keys_delimiter)?
-        } else {
-            None
-        }
-        .map(CowString::Owned)
-        .unwrap_or_else(|| self.default_path.to_string_lossy());
+        let path = get_path(
+            value,
+            &self.path_option,
+            &self.default_path,
+            &self.keys_delimiter,
+        )?;
 
         let file = match try_open_file(path.as_ref()) {
             Ok(f) => f,
@@ -79,7 +83,22 @@ impl<L: Load + Default> Parse for FileParser<L> {
     }
 }
 
-fn try_open_file(path: &str) -> Result<File> {
+fn get_path<'a>(
+    value: &Value,
+    path_option: &Option<String>,
+    default: &'a Path,
+    delim: &str,
+) -> crate::Result<CowPath<'a>> {
+    let default = default.into();
+    let Some(option) = path_option else {
+        return Ok(default);
+    };
+
+    let path: Option<String> = value.get_by_key_path_with_delim(option, delim)?;
+    Ok(path.map_or(default, |p| PathBuf::from(p).into()))
+}
+
+fn try_open_file(path: &Path) -> Result<File> {
     let file = File::open(path)?;
     if file.metadata()?.is_file() {
         return Ok(file);

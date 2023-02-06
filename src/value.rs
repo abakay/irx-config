@@ -19,21 +19,16 @@ type CowInnerValue<'a> = Cow<'a, InnerValue>;
 ///
 /// **IMPORTANT:** Once [`Value`] was sealed, but fully/partially mutated after that, it will be represented as empty
 /// dictionary during display/debugging output, to prevent sensitive data leakages.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SealedState {
     /// A [`Value`] was never sealed, all data will be represented as is during display/debugging output.
+    #[default]
     None,
     /// A [`Value`] was sealed, sensitive data will be obfuscated during display/debugging output.
     On,
     /// A [`Value`] was sealed and fully/partially mutated after that, whole [`Value`] will be represented as empty
     /// dictionary during display/debugging output (see above).
     Mutated,
-}
-
-impl Default for SealedState {
-    fn default() -> Self {
-        SealedState::None
-    }
 }
 
 /// This structure represent key-value based configuration data.

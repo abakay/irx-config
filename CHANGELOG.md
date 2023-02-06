@@ -1,5 +1,15 @@
 # ChangeLog
 
+## 2023-02-05 -- 3.2.0
+
+Changes:
+
+* Set `Rust` version to `1.64.0` in `Cargo.toml` file.
+* Fixed compilation/clippy warnings for `Rust 1.67.0`.
+* Upgrade [clap](https://docs.rs/clap/) dependency to the next minor version `4.1.x`.
+* Upgrade [toml](https://docs.rs/toml/) dependency to the next minor version `0.7.x`.
+* Minor code improvements.
+
 ## 2022-12-18 -- 3.1.1
 
 Changes:
