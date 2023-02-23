@@ -7,14 +7,15 @@ pub mod parsers;
 mod tests;
 pub mod value;
 
-pub use crate::config::{Config, ConfigBuilder};
-pub use crate::value::json;
 use crate::value::SerdeError;
-pub use crate::value::Value;
-use std::borrow::Cow;
-use std::error::Error as StdError;
-use std::fmt::Debug;
-use std::result::Result as StdResult;
+pub use crate::{
+    config::{Config, ConfigBuilder},
+    value::{json, Value},
+};
+use std::{
+    borrow::Cow, error::Error as StdError, fmt::Debug, io::Error as IoError,
+    result::Result as StdResult,
+};
 
 /// A result type with internal error.
 pub type Result<T> = StdResult<T, Error>;
@@ -34,16 +35,16 @@ pub const DEFAULT_KEYS_SEPARATOR: &str = ":";
 #[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Empty key path separator")]
-    EmptySeparator,
+    #[error("Failed to {0} path: '{1}' with empty key path separator")]
+    EmptySeparator(&'static str, String),
     #[error("Mapping object expected")]
     NotMap,
-    #[error("Failed to serialize/deserialize")]
-    SerdeError(#[from] SerdeError),
-    #[error("Failed to parse value")]
-    ParseValue(#[from] AnyError),
-    #[error(transparent)]
-    IO(#[from] std::io::Error),
+    #[error("{1}")]
+    SerdeError(#[source] SerdeError, Cow<'static, str>),
+    #[error("Failed to parse value for parser #{1}")]
+    ParseValue(#[source] AnyError, usize),
+    #[error("{1}")]
+    IO(#[source] IoError, Cow<'static, str>),
 }
 
 /// Case mode to merging keys during (re)load.

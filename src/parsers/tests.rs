@@ -129,7 +129,7 @@ mod json_test {
     }
 
     #[test]
-    #[should_panic(expected = "Is not a file")]
+    #[should_panic(expected = "NotAFile")]
     fn parse_not_a_file() {
         ConfigBuilder::default()
             .append_parser(

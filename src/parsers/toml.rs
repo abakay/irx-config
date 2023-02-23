@@ -23,10 +23,27 @@
 //!     .load()?;
 //! ```
 
-use crate::parsers::{FileParserBuilder, Load};
-use crate::{AnyResult, Case, Value};
-use std::io::Read;
+use crate::{
+    parsers::{FileParserBuilder, Load},
+    AnyResult, Case, Value,
+};
+use std::{
+    borrow::Cow,
+    io::{Error as IoError, Read},
+};
 use toml::Value as TomlValue;
+
+/// All errors for `TOML` parser.
+#[non_exhaustive]
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("${1}")]
+    IoError(#[source] IoError, Cow<'static, str>),
+    #[error("Failed parse TOML")]
+    ParseToml(#[source] toml::de::Error),
+    #[error("Failed to create value node")]
+    Value(#[source] crate::Error),
+}
 
 /// Builder for `TOML` parser.
 pub type ParserBuilder = FileParserBuilder<LoadToml>;
@@ -40,8 +57,13 @@ impl Case for LoadToml {}
 impl Load for LoadToml {
     fn load(&mut self, mut reader: impl Read) -> AnyResult<Value> {
         let mut data = String::new();
-        reader.read_to_string(&mut data)?;
-        Ok(Value::try_from(normalize(&mut toml::from_str(&data)?))?)
+        reader
+            .read_to_string(&mut data)
+            .map_err(|e| Error::IoError(e, "Failed read data to buffer".into()))?;
+        Ok(Value::try_from(normalize(
+            &mut toml::from_str(&data).map_err(Error::ParseToml)?,
+        ))
+        .map_err(Error::Value)?)
     }
 }
 

@@ -30,6 +30,16 @@ use derive_builder::Builder;
 use serde_yaml::Value as YamlValue;
 use std::env;
 
+/// All errors for environment variables parser.
+#[non_exhaustive]
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Failed parse as YAML: '{1}'")]
+    ParseYaml(#[source] serde_yaml::Error, String),
+    #[error("{1} for keys: '{2}'")]
+    Value(#[source] crate::Error, &'static str, String),
+}
+
 /// The environment variable parser implementation.
 #[derive(Builder, Default)]
 #[builder(setter(into, strip_option), default)]
@@ -64,7 +74,9 @@ impl Parse for Parser {
         }
 
         let prefix = if let Some(ref p) = self.prefix_option {
-            value.get_by_key_path_with_delim(p, &self.keys_delimiter)?
+            value
+                .get_by_key_path_with_delim(p, &self.keys_delimiter)
+                .map_err(|e| Error::Value(e, "Failed to get prefix", p.into()))?
         } else {
             None
         }
@@ -83,8 +95,10 @@ impl Parse for Parser {
             Some((norm_key.into_owned(), v.to_string_lossy().to_string()))
         }) {
             let path = k.trim_start_matches(prefix.as_ref());
-            let val: YamlValue = serde_yaml::from_str(&v)?;
-            result.set_by_key_path_with_delim(path, &self.env_keys_delimiter, val)?;
+            let val: YamlValue = serde_yaml::from_str(&v).map_err(|e| Error::ParseYaml(e, v))?;
+            result
+                .set_by_key_path_with_delim(path, &self.env_keys_delimiter, val)
+                .map_err(|e| Error::Value(e, "Failed to set value", path.into()))?;
         }
 
         self.value = Some(result.clone());

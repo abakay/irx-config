@@ -1,5 +1,12 @@
 # ChangeLog
 
+## 2023-02-23 -- 3.3.0
+
+Changes:
+
+* Set `Rust` version to `1.65.0` in `Cargo.toml` file.
+* Improved error reporting.
+
 ## 2023-02-05 -- 3.2.0
 
 Changes:

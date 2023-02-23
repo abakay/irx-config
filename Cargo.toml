@@ -1,8 +1,8 @@
 [package]
 name = "irx-config"
-version = "3.2.0"
+version = "3.3.0"
 edition = "2021"
-rust-version = "1.64.0"
+rust-version = "1.65.0"
 authors = ["Andriy Bakay <andriy@irbisx.com>"]
 description = "The library provides convenient way to represent/parse configuration from different sources"
 license = "BSD-2-Clause"
