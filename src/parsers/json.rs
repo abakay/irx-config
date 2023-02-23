@@ -23,9 +23,19 @@
 //!     .load()?;
 //! ```
 
-use crate::parsers::{FileParserBuilder, Load};
-use crate::{AnyResult, Case, Value};
+use crate::{
+    parsers::{FileParserBuilder, Load},
+    AnyResult, Case, Value,
+};
 use std::io::Read;
+
+/// All errors for `JSON` parser.
+#[non_exhaustive]
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Failed parse JSON")]
+    ParseJson(#[source] serde_json::Error),
+}
 
 /// Builder for `JSON` parser.
 pub type ParserBuilder = FileParserBuilder<LoadJson>;
@@ -39,6 +49,6 @@ impl Case for LoadJson {}
 impl Load for LoadJson {
     #[inline]
     fn load(&mut self, reader: impl Read) -> AnyResult<Value> {
-        Ok(serde_json::from_reader(reader)?)
+        Ok(serde_json::from_reader(reader).map_err(Error::ParseJson)?)
     }
 }

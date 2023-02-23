@@ -1,14 +1,15 @@
 //! This module define [`Value`] structure which represent key-value based configuration data.
 
 use crate::{Error, Result, DEFAULT_KEYS_SEPARATOR};
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 pub use serde_json::json;
 pub(super) use serde_json::Error as SerdeError;
 use serde_json::{map::Map, Value as InnerValue};
-use std::borrow::Cow;
-use std::fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult};
-use std::result::Result as StdResult;
+use std::{
+    borrow::Cow,
+    fmt::{Debug, Display, Error as FmtError, Formatter, Result as FmtResult},
+    result::Result as StdResult,
+};
 
 type ValueMap = Map<String, InnerValue>;
 type CowInnerValue<'a> = Cow<'a, InnerValue>;
@@ -254,7 +255,7 @@ impl Value {
             T: DeserializeOwned,
         {
             if delim.is_empty() {
-                return Err(Error::EmptySeparator);
+                return Err(Error::EmptySeparator("get", path.into()));
             }
 
             if path.is_empty() {
@@ -413,7 +414,7 @@ impl Value {
             T: Serialize,
         {
             if delim.is_empty() {
-                return Err(Error::EmptySeparator);
+                return Err(Error::EmptySeparator("set", path.into()));
             }
 
             if path.is_empty() {
@@ -622,11 +623,13 @@ fn unicase_value_map(map: &ValueMap) -> InnerValue {
 
 #[inline]
 fn get<T: DeserializeOwned>(value: InnerValue) -> Result<T> {
-    Ok(serde_json::from_value(value)?)
+    serde_json::from_value(value)
+        .map_err(|e| Error::SerdeError(e, "Failed to deserialize value".into()))
 }
 
 fn set<T: Serialize>(value: T, case_on: bool) -> Result<InnerValue> {
-    let value = serde_json::to_value(value)?;
+    let value = serde_json::to_value(value)
+        .map_err(|e| Error::SerdeError(e, "Failed to serialize value".into()))?;
     Ok(match value {
         InnerValue::Object(ref map) if !case_on => unicase_value_map(map),
         _ => value,

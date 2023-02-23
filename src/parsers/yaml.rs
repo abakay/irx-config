@@ -23,9 +23,19 @@
 //!     .load()?;
 //! ```
 
-use crate::parsers::{FileParserBuilder, Load};
-use crate::{AnyResult, Case, Value};
+use crate::{
+    parsers::{FileParserBuilder, Load},
+    AnyResult, Case, Value,
+};
 use std::io::Read;
+
+/// All errors for `YAML` parser.
+#[non_exhaustive]
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Failed parse YAML")]
+    ParseYaml(#[source] serde_yaml::Error),
+}
 
 /// Builder for `YAML` parser.
 pub type ParserBuilder = FileParserBuilder<LoadYaml>;
@@ -39,6 +49,6 @@ impl Case for LoadYaml {}
 impl Load for LoadYaml {
     #[inline]
     fn load(&mut self, reader: impl Read) -> AnyResult<Value> {
-        Ok(serde_yaml::from_reader(reader)?)
+        Ok(serde_yaml::from_reader(reader).map_err(Error::ParseYaml)?)
     }
 }

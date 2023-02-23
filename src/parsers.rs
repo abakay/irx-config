@@ -21,11 +21,29 @@ use derive_builder::Builder;
 use std::{
     borrow::Cow,
     fs::File,
-    io::{BufReader, Error, ErrorKind, Read, Result},
+    io::{BufReader, Error as IoError, Read},
     path::{Path, PathBuf},
+    result::Result as StdResult,
 };
 
+/// A result type for file-based parsers errors.
+pub type Result<T> = StdResult<T, Error>;
+
 type CowPath<'a> = Cow<'a, Path>;
+
+/// All errors for file-based parsers.
+#[non_exhaustive]
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("Failed to get file path by option: '{1}'")]
+    PathOption(#[source] crate::Error, String),
+    #[error("Failed to open file: '{1}'")]
+    Open(#[source] IoError, PathBuf),
+    #[error("Failed to get meta data for file: '{1}'")]
+    Meta(#[source] IoError, PathBuf),
+    #[error("Is not a file: '{0}'")]
+    NotAFile(PathBuf),
+}
 
 /// The trait to be used by [`FileParser`] to load data from file in specific format.
 pub trait Load: Case {
@@ -88,21 +106,27 @@ fn get_path<'a>(
     path_option: &Option<String>,
     default: &'a Path,
     delim: &str,
-) -> crate::Result<CowPath<'a>> {
+) -> Result<CowPath<'a>> {
     let default = default.into();
     let Some(option) = path_option else {
         return Ok(default);
     };
 
-    let path: Option<String> = value.get_by_key_path_with_delim(option, delim)?;
+    let path: Option<String> = value
+        .get_by_key_path_with_delim(option, delim)
+        .map_err(|e| Error::PathOption(e, option.into()))?;
     Ok(path.map_or(default, |p| PathBuf::from(p).into()))
 }
 
 fn try_open_file(path: &Path) -> Result<File> {
-    let file = File::open(path)?;
-    if file.metadata()?.is_file() {
+    let file = File::open(path).map_err(|e| Error::Open(e, path.into()))?;
+    if file
+        .metadata()
+        .map_err(|e| Error::Meta(e, path.into()))?
+        .is_file()
+    {
         return Ok(file);
     }
 
-    Err(Error::new(ErrorKind::InvalidData, "Is not a file"))
+    Err(Error::NotAFile(path.into()))
 }

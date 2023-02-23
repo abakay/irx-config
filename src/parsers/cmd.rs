@@ -62,22 +62,22 @@ use std::{
     path::PathBuf,
 };
 
-/// A result type for current module errors.
+/// A result type for command-line parser errors.
 pub type Result<T> = StdResult<T, Error>;
 
 /// The default maximum depth to get (sub)commands arguments names.
 pub const DEFAULT_MAX_DEPTH: u8 = 16;
 
-/// Error generated during build parser process.
+/// All errors for command-line parser.
 #[non_exhaustive]
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Yaml parser error")]
-    ParseYaml(#[from] serde_yaml::Error),
-    #[error("Clap error")]
-    Clap(#[from] clap::Error),
-    #[error(transparent)]
-    Common(#[from] crate::Error),
+    #[error("Failed parse as YAML: '{1}'")]
+    ParseYaml(#[source] serde_yaml::Error, String),
+    #[error("{1}")]
+    Clap(#[source] clap::Error, Cow<'static, str>),
+    #[error("{1}")]
+    Common(#[source] crate::Error, Cow<'static, str>),
 }
 
 /// The command-line parser implementation.
@@ -207,7 +207,7 @@ impl ParserBuilder {
         let matches = if self.exit_on_error {
             result.unwrap_or_else(|e| e.exit())
         } else {
-            result?
+            result.map_err(|e| Error::Clap(e, "Failed to get matches".into()))?
         };
 
         let value = self.get_app_arguments(
@@ -295,11 +295,14 @@ impl ParserBuilder {
                 [ref a] if !is_arg_list(arg) => Cow::Borrowed(a.as_ref()),
                 _ => Cow::Owned(["[", &v.join(","), "]"].concat()),
             };
-            value.set_by_key_path_with_delim(
-                path,
-                delim,
-                serde_yaml::from_str::<YamlValue>(&v)?,
-            )?;
+            value
+                .set_by_key_path_with_delim(
+                    path,
+                    delim,
+                    serde_yaml::from_str::<YamlValue>(&v)
+                        .map_err(|e| Error::ParseYaml(e, v.to_string()))?,
+                )
+                .map_err(|e| Error::Common(e, format!("Failed to set path: '{path}'").into()))?;
         }
         Ok(value)
     }

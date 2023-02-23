@@ -1,6 +1,6 @@
 //! This module define main configuration structures: [`Config`] and [`ConfigBuilder`].
 
-use crate::{AnyParser, MergeCase, Parse, Result, Value, DEFAULT_KEYS_SEPARATOR};
+use crate::{AnyParser, Error, MergeCase, Parse, Result, Value, DEFAULT_KEYS_SEPARATOR};
 use blake2b_simd::Hash;
 use serde::de::DeserializeOwned;
 use std::cmp::Ordering;
@@ -25,8 +25,11 @@ impl Config {
     /// If any errors will occur during parsing/merging then error will be returned.
     pub fn reload(&mut self) -> Result<&mut Self> {
         let mut value = Value::default();
-        for parser in self.parsers.iter_mut() {
-            value = parser.parse(&value)?.merge_with_case(&value, self.case_on);
+        for (idx, parser) in self.parsers.iter_mut().enumerate() {
+            value = parser
+                .parse(&value)
+                .map_err(|e| Error::ParseValue(e, idx + 1))?
+                .merge_with_case(&value, self.case_on);
         }
 
         value.seal(&self.sealed_suffix);

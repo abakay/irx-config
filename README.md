@@ -26,7 +26,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.2", features = ["env", "json"] }
+irx-config = { version = "3.3", features = ["env", "json"] }
 ```
 
 ```rust
@@ -65,7 +65,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.2", features = ["cmd", "env", "toml-parser"] }
+irx-config = { version = "3.3", features = ["cmd", "env", "toml-parser"] }
 ```
 
 ```rust
@@ -73,6 +73,10 @@ use clap::app_from_crate;
 use irx_config::parsers::{cmd, env, toml};
 use irx_config::ConfigBuilder;
 use serde::Deserialize;
+
+fn localhost() -> String {
+    "localhost".into()
+}
 
 #[derive(Deserialize)]
 struct Logger {
@@ -164,7 +168,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.2", features = ["json"] }
+irx-config = { version = "3.3", features = ["json"] }
 ```
 
 ```rust
