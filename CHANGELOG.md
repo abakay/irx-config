@@ -1,5 +1,13 @@
 # ChangeLog
 
+## 2023-12-11 -- 3.4.0
+
+Changes:
+
+* Switch from `BLAKE2b` to `BLAKE3` hash.
+* Upgrade [clap](https://docs.rs/clap/) dependency to the next minor version `4.4.x`.
+* Upgrade [toml](https://docs.rs/toml/) dependency to the next minor version `0.8.x`.
+
 ## 2023-02-23 -- 3.3.0
 
 Changes:
