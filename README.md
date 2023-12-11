@@ -26,7 +26,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.3", features = ["env", "json"] }
+irx-config = { version = "3.4", features = ["env", "json"] }
 ```
 
 ```rust
@@ -65,7 +65,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.3", features = ["cmd", "env", "toml-parser"] }
+irx-config = { version = "3.4", features = ["cmd", "env", "toml-parser"] }
 ```
 
 ```rust
@@ -168,7 +168,7 @@ To enable parsers used in example below, one has to add the following to `Cargo.
 
 ```toml
 [dependencies]
-irx-config = { version = "3.3", features = ["json"] }
+irx-config = { version = "3.4", features = ["json"] }
 ```
 
 ```rust

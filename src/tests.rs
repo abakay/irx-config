@@ -240,7 +240,7 @@ mod config {
 
     #[test]
     fn display() -> AnyResult<()> {
-        let expected = r#"Config: BLAKE2b: 3b60528a5998a64869665a652c6c483ed448c1ca752115285049986c91ad28b68c76e90decb141e9d79d1fb26aea80b21c262b1b74fe39863ff461516272631f
+        let expected = r#"Config: BLAKE3: 491cb76797a37492c3b10bbf93278b7ba568341f2f9237ba7f289956a24e1eac
 {
   "connections": {
     "node-1": "tcp://node-1",
@@ -261,7 +261,7 @@ mod config {
 
     #[test]
     fn display_sealed() -> AnyResult<()> {
-        let expected = r#"Config: BLAKE2b: 60fc9c29c18e47d1709bb584794faef76b1cedca31aba76c73cd60a23f22ca51b961ac9bbc80abca7fde1a5247ee140178d9067146aed012e2d78758b3496e01
+        let expected = r#"Config: BLAKE3: 0102dcddd8073a13d974e538331910072c0dd35bef692b291dca68479c267f40
 {
   "perm": {
     "password": "********",
@@ -307,7 +307,7 @@ mod config {
 
     #[test]
     fn display_debug() -> AnyResult<()> {
-        let expected = r#"Config { parsers: size(1), value: Value { value: Object {"connections": Object {"node-1": String("tcp://node-1"), "node-2": String("tcp://node-2")}, "settings": Object {"id": Number(2), "logger": String("from second"), "name": String("node-2")}}, sealed: None, sealed_state: On, case_on: true }, case_on: true, hash: Hash(0x3b60528a5998a64869665a652c6c483ed448c1ca752115285049986c91ad28b68c76e90decb141e9d79d1fb26aea80b21c262b1b74fe39863ff461516272631f), sealed_suffix: "", keys_delimiter: ":" }"#;
+        let expected = r#"Config { parsers: size(1), value: Value { value: Object {"connections": Object {"node-1": String("tcp://node-1"), "node-2": String("tcp://node-2")}, "settings": Object {"id": Number(2), "logger": String("from second"), "name": String("node-2")}}, sealed: None, sealed_state: On, case_on: true }, case_on: true, hash: Hash("491cb76797a37492c3b10bbf93278b7ba568341f2f9237ba7f289956a24e1eac"), sealed_suffix: "", keys_delimiter: ":" }"#;
         let conf = ConfigBuilder::load_one(JsonStringParser::new(SETTINGS_SECOND))?;
         println!("{conf:?}");
         assert_eq!(expected, format!("{conf:?}"));
@@ -316,7 +316,7 @@ mod config {
 
     #[test]
     fn display_sealed_nested() -> AnyResult<()> {
-        let expected = r#"Config: BLAKE2b: 60fc9c29c18e47d1709bb584794faef76b1cedca31aba76c73cd60a23f22ca51b961ac9bbc80abca7fde1a5247ee140178d9067146aed012e2d78758b3496e01
+        let expected = r#"Config: BLAKE3: 0102dcddd8073a13d974e538331910072c0dd35bef692b291dca68479c267f40
 {
   "perm": "********",
   "settings": {
