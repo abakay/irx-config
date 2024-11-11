@@ -1,10 +1,52 @@
 //! This module define main configuration structures: [`Config`] and [`ConfigBuilder`].
 
 use crate::{AnyParser, Error, MergeCase, Parse, Result, Value, DEFAULT_KEYS_SEPARATOR};
-use blake3::Hash;
 use serde::de::DeserializeOwned;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "blake2b")] {
+        use blake2b_simd as HashModule;
+        use HashModule::blake2b as hash_func;
+        const HASH_NAME: &str = "BLAKE2b";
+    } else if #[cfg(feature = "blake3")] {
+        use blake3 as HashModule;
+        use HashModule::hash as hash_func;
+        const HASH_NAME: &str = "BLAKE3";
+    }
+}
+
+#[derive(PartialEq)]
+struct Hash(HashModule::Hash);
+
+impl Hash {
+    #[inline]
+    fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+impl From<&[u8]> for Hash {
+    #[inline]
+    fn from(value: &[u8]) -> Self {
+        Self(hash_func(value))
+    }
+}
+
+impl Debug for Hash {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+impl Display for Hash {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&self.0.to_hex())
+    }
+}
 
 /// Container for all parser sources which will (re)load data from a parsers in order in which they was added
 /// to [`ConfigBuilder`]. It will provide access to merged set of (re)loaded configuration parameters.
@@ -33,22 +75,28 @@ impl Config {
         }
 
         value.seal(&self.sealed_suffix);
-        self.hash = blake3::hash(&value.as_bytes());
+        self.hash = Hash::from(value.as_bytes().as_ref());
         self.value = value;
         Ok(self)
+    }
+
+    /// Name of the hash used for loaded configuration data.
+    #[inline]
+    pub fn hash_name() -> &'static str {
+        HASH_NAME
     }
 
     /// Calculate hash for currently loaded configuration data.
     #[inline]
     pub fn hash(&self) -> String {
-        format!("BLAKE3: {}", self.hash.to_hex())
+        [HASH_NAME, ": ", &self.hash.to_string()].concat()
     }
 
     /// Returns configuration data value to corresponding key/nested keys.
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// let name: Option<u32> = conf.get_by_keys(["logger", "name"])?;
     /// ```
     ///
@@ -70,7 +118,7 @@ impl Config {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use serde::Deserialize;
     ///
     /// #[derive(Deserialize)]
@@ -100,7 +148,7 @@ impl Config {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// let name: Option<u32> = conf.get_by_key_path_with_delim("logger:name", ":")?;
     /// ```
     ///
@@ -121,7 +169,7 @@ impl Config {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use serde::Deserialize;
     ///
     /// #[derive(Deserialize)]
@@ -209,7 +257,7 @@ impl ConfigBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::parsers::{env, json};
     /// use irx_config::ConfigBuilder;
     ///
@@ -242,7 +290,7 @@ impl ConfigBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::parsers::env;
     /// use irx_config::ConfigBuilder;
     ///
@@ -268,7 +316,7 @@ impl ConfigBuilder {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use clap::app_from_crate;
     /// use irx_config::parsers::cmd;
     /// use irx_config::ConfigBuilder;
@@ -303,7 +351,7 @@ impl ConfigBuilder {
     /// If any errors will occur during parsing/merging then error will be returned.
     pub fn load(self) -> Result<Config> {
         let value = Value::default();
-        let hash = blake3::hash(&value.as_bytes());
+        let hash = Hash::from(value.as_bytes().as_ref());
         let case_on = if MergeCase::Auto == self.merge_case {
             self.auto_case_on
         } else {

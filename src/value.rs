@@ -53,7 +53,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::{json, Value};
     ///
     /// let data = Value::try_from(json!(
@@ -107,7 +107,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::{json, Value};
     ///
     /// let mut person = Value::try_from(json!({
@@ -158,7 +158,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::{json, Value};
     ///
     /// let logger = Value::try_from(json!({
@@ -202,7 +202,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::{json, Value};
     ///
     /// let logger = Value::try_from(json!({
@@ -232,7 +232,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::{json, Value};
     ///
     /// let logger = Value::try_from(json!({
@@ -276,7 +276,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::{json, Value};
     /// use serde::Deserialize;
     ///
@@ -315,7 +315,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::Value;
     ///
     /// let mut value = Value::default();
@@ -367,7 +367,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::Value;
     ///
     /// let mut value = Value::default();
@@ -392,7 +392,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::Value;
     ///
     /// let mut value = Value::default();
@@ -438,7 +438,7 @@ impl Value {
     ///
     /// # Example
     ///
-    /// ```no_run
+    /// ```
     /// use irx_config::Value;
     ///
     /// let mut value = Value::try_from(json!({
