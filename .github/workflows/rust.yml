@@ -10,12 +10,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  build-os:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable, beta]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        rust: [ stable, beta ]
 
     steps:
       - name: Checkout code
@@ -26,7 +26,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
-      
+
       - name: Cache Cargo registry
         uses: actions/cache@v4
         with:
@@ -34,7 +34,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
-      
+
       - name: Cache Cargo build
         uses: actions/cache@v4
         with:
@@ -49,9 +49,59 @@ jobs:
           command: build
           args: --release --all-features
 
-      - name: Test
-        if: runner.os != 'Windows'
+      - name: Test default
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose --all-targets --all-features
+          args: --verbose --all-features
+
+      - name: Test blake3
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --no-default-features --features blake3,cmd,yaml,env,json,toml-parser,json5-parser
+
+  build-target:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [ x86_64-apple-darwin ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-cargo-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ matrix.target }}-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-build-
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --target ${{ matrix.target }} --release --features cmd,yaml,env,json,toml-parser,json5-parser
+
+      - name: Test default
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --target ${{ matrix.target }} --verbose --features cmd,yaml,env,json,toml-parser,json5-parser

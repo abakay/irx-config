@@ -1,8 +1,8 @@
 [package]
 name = "irx-config"
-version = "3.4.0"
+version = "3.5.0"
 edition = "2021"
-rust-version = "1.65.0"
+rust-version = "1.74.0"
 authors = ["Andriy Bakay <andriy@irbisx.com>"]
 description = "The library provides convenient way to represent/parse configuration from different sources"
 license = "BSD-2-Clause"
@@ -26,11 +26,13 @@ all-features = true
 thiserror = "1.0"
 serde = "1.0"
 serde_json = "1.0"
-blake3 = "1.5"
-derive_builder = { version = "0.12", optional = true }
+cfg-if = "1.0"
+blake2b_simd = { version = "1.0", optional = true }
+blake3 = { version = "1.5", optional = true }
+derive_builder = { version = "0.20", optional = true }
 serde_yaml = { version = "0.9", optional = true }
 toml = { version = "0.8", optional = true }
-clap = { version = "4.4", optional = true }
+clap = { version = "4.5", optional = true }
 json5 = { version = "0.4", optional = true }
 
 [dev-dependencies]
@@ -38,13 +40,19 @@ serde = { version = "1.0", features = ["derive"] }
 version-sync = "0.9"
 
 [features]
-parsers = ["derive_builder"]
-env = ["parsers", "serde_yaml"]
+default = ["blake2b"]
+blake2b = ["dep:blake2b_simd"]
+blake3 = ["dep:blake3"]
+parsers = ["dep:derive_builder"]
+env = ["parsers", "dep:serde_yaml"]
 json = ["parsers"]
-json5-parser = ["parsers", "json5"]
-yaml = ["parsers", "serde_yaml"]
-toml-parser = ["parsers", "toml"]
-cmd = ["parsers", "clap", "serde_yaml"]
+json5-parser = ["parsers", "dep:json5"]
+yaml = ["parsers", "dep:serde_yaml"]
+toml-parser = ["parsers", "dep:toml"]
+cmd = ["parsers", "dep:clap", "dep:serde_yaml"]
+
+[lib]
+doctest = false
 
 [[test]]
 name = "parsers"

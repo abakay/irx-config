@@ -128,8 +128,6 @@ mod json_test {
             .unwrap();
     }
 
-    #[test]
-    #[should_panic(expected = "NotAFile")]
     fn parse_not_a_file() {
         ConfigBuilder::default()
             .append_parser(
@@ -141,6 +139,20 @@ mod json_test {
             )
             .load()
             .unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "NotAFile")]
+    #[cfg_attr(windows, ignore)]
+    fn parse_not_a_file_unix() {
+        parse_not_a_file()
+    }
+
+    #[test]
+    #[should_panic(expected = "Access is denied")]
+    #[cfg_attr(unix, ignore)]
+    fn parse_not_a_file_windows() {
+        parse_not_a_file()
     }
 }
 

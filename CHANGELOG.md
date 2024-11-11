@@ -1,5 +1,17 @@
 # ChangeLog
 
+## 2024-11-11 -- 3.5.0
+
+Changes:
+
+* Make hash configurable via crate features: `blake2b` and `blake3`. Use `blake2b` feature by default.
+* Switch to dependency namespace `dep:...` in `Cargo.toml` file.
+* Set `Rust` version to `1.74.0` in `Cargo.toml` file.
+* Upgrade [derive_builder](https://docs.rs/derive_builder/) dependency to the next minor version `0.20.x`.
+* Upgrade [clap](https://docs.rs/clap/) dependency to the next minor version `4.5.x`.
+* Disable doc tests for create's documentation.
+* Minor code cleanups.
+
 ## 2023-12-11 -- 3.4.0
 
 Changes:

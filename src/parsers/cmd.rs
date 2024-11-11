@@ -16,7 +16,7 @@
 //! be merged accordingly with other parsers results. Such nested keys structure(s) will represent
 //! sub dictionaries/sections.
 //!
-//! ```no_run
+//! ```
 //! use clap::{command, Arg};
 //! use irx_config::ConfigBuilder;
 //! use irx_config::parsers::cmd::ParserBuilder;
@@ -33,7 +33,7 @@
 //! subcommand(s) then arguments names for each subcommand will be prefixed with given subcommand's name and keys
 //! delimiter. The `global key names` feature is on by default.
 //!
-//! ```no_run
+//! ```
 //! use clap::{command, Command, Arg};
 //! use irx_config::ConfigBuilder;
 //! use irx_config::parsers::cmd::ParserBuilder;
@@ -225,7 +225,7 @@ impl ParserBuilder {
         if let Some(ref args) = self.args {
             self.command.try_get_matches_from_mut(args)
         } else {
-            self.command.try_get_matches_from_mut(&mut env::args_os())
+            self.command.try_get_matches_from_mut(env::args_os())
         }
     }
 

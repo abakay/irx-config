@@ -11,7 +11,7 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```
 //! use irx_config::ConfigBuilder;
 //! use irx_config::parsers::env::ParserBuilder;
 //!
